@@ -27,10 +27,13 @@ class OrganizationMemberResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->query(fn () => User::query()->whereHas(
-                'organizations',
-                fn ($query) => $query->where('organizations.id', Filament::getTenant()->id),
-            ))
+            ->query(fn () => User::query()
+                ->select('users.*')
+                ->selectRaw('organization_user.role as membership_role')
+                ->selectRaw('organization_user.created_at as membership_joined_at')
+                ->join('organization_user', fn ($join) => $join
+                    ->on('users.id', '=', 'organization_user.user_id')
+                    ->where('organization_user.organization_id', Filament::getTenant()->id)))
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
@@ -38,27 +41,14 @@ class OrganizationMemberResource extends Resource
                 TextColumn::make('email')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('pivot.role')
+                TextColumn::make('membership_role')
                     ->label('Role')
                     ->badge()
-                    ->getStateUsing(function (User $record): ?Role {
-                        $pivot = $record->organizations()
-                            ->where('organizations.id', Filament::getTenant()->id)
-                            ->first()?->pivot;
-
-                        return $pivot ? Role::from($pivot->role) : null;
-                    }),
-                TextColumn::make('created_at')
+                    ->formatStateUsing(fn (?string $state): ?string => $state ? Role::from($state)->getLabel() : null),
+                TextColumn::make('membership_joined_at')
                     ->label('Joined')
                     ->dateTime()
-                    ->sortable()
-                    ->getStateUsing(function (User $record): ?string {
-                        $pivot = $record->organizations()
-                            ->where('organizations.id', Filament::getTenant()->id)
-                            ->first()?->pivot;
-
-                        return $pivot?->created_at;
-                    }),
+                    ->sortable(),
             ])
             ->actions([
                 \Filament\Actions\Action::make('changeRole')
