@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Role;
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -15,11 +17,22 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
+        $user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        $acme = Organization::factory()->create([
+            'name' => 'Acme Corp',
+            'slug' => 'acme-corp',
+        ]);
+
+        $globex = Organization::factory()->create([
+            'name' => 'Globex Inc',
+            'slug' => 'globex-inc',
+        ]);
+
+        $user->organizations()->attach($acme, ['role' => Role::Owner->value]);
+        $user->organizations()->attach($globex, ['role' => Role::Admin->value]);
     }
 }
