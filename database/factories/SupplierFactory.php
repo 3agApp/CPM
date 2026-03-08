@@ -18,6 +18,17 @@ class SupplierFactory extends Factory
         return [
             'organization_id' => Organization::factory(),
             'name' => fake()->company(),
+            'article_number_prefix' => strtoupper(fake()->lexify('???')),
+            'default_wg1' => fake()->words(2, true),
+            'default_wg2' => fake()->words(2, true),
+            'default_manufacturer_id' => strtoupper(fake()->bothify('???###')),
+            'default_supplier_margin' => fake()->randomFloat(2, 10, 35),
+            'minimum_shop_margin' => fake()->randomFloat(2, 5, 25),
+            'price_currency' => 'EUR',
+            'default_rounding_rule' => 'end_with_90',
+            'is_active' => true,
+            'is_webshop' => fake()->boolean(),
+            'is_webshop_active' => false,
         ];
     }
 }
