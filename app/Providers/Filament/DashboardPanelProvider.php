@@ -33,6 +33,7 @@ class DashboardPanelProvider extends PanelProvider
             ->brandName('CPM')
             ->login()
             ->registration(Register::class)
+            ->databaseNotifications()
             ->colors([
                 'primary' => Color::Blue,
             ])
