@@ -15,11 +15,11 @@ use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Promptable;
 use Stringable;
 
-#[Provider(Lab::Gemini)]
+#[Provider(Lab::Anthropic)]
 #[UseSmartestModel]
 #[MaxTokens(65536)]
 #[Temperature(0.2)]
-#[Timeout(300)]
+#[Timeout(600)]
 class DocumentProcessor implements Agent, HasStructuredOutput
 {
     use Promptable;
@@ -32,7 +32,8 @@ class DocumentProcessor implements Agent, HasStructuredOutput
 
         return <<<INSTRUCTIONS
         You are a product data processor for a catalog/product management system.
-        Your task is to process uploaded product documents (CSV/XLSX) and transform them into a standardized output CSV format.
+        Your task is to process uploaded product data (provided as JSON array) and transform it into a standardized output CSV format.
+        The source data is provided as a JSON array of objects, where each object represents a row and keys are column headers from the original document.
 
         ## Supplier Context
         {$supplierContext}
@@ -93,8 +94,8 @@ class DocumentProcessor implements Agent, HasStructuredOutput
     {
         return [
             'needs_clarification' => $schema->boolean()->required(),
-            'question' => $schema->string()->required(),
-            'csv_output' => $schema->string()->required(),
+            'question' => $schema->string()->nullable(),
+            'csv_output' => $schema->string()->nullable(),
         ];
     }
 

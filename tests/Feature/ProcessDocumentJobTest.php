@@ -11,7 +11,7 @@ beforeEach(function () {
 });
 
 it('processes document and completes when ai returns csv output', function () {
-    Storage::put('documents/test.csv', 'name,price');
+    Storage::put('documents/test.csv', "name,price\nWidget,9.99");
 
     $conversation = DocumentConversation::factory()->create([
         'stored_path' => 'documents/test.csv',
@@ -36,7 +36,7 @@ it('processes document and completes when ai returns csv output', function () {
 });
 
 it('sets status to needs_context when ai asks a question', function () {
-    Storage::put('documents/test.csv', 'name,price');
+    Storage::put('documents/test.csv', "name,price\nWidget,9.99");
 
     $conversation = DocumentConversation::factory()->create([
         'stored_path' => 'documents/test.csv',
@@ -59,7 +59,7 @@ it('sets status to needs_context when ai asks a question', function () {
 });
 
 it('includes user context in the prompt when provided', function () {
-    Storage::put('documents/test.csv', 'name,price');
+    Storage::put('documents/test.csv', "name,price\nWidget,9.99");
 
     $conversation = DocumentConversation::factory()->create([
         'stored_path' => 'documents/test.csv',
@@ -79,12 +79,12 @@ it('includes user context in the prompt when provided', function () {
 
     DocumentProcessor::assertPrompted(function ($prompt) {
         return str_contains($prompt->prompt, 'The VAT rate is 8.1%')
-            && str_contains($prompt->prompt, 'name,price');
+            && str_contains($prompt->prompt, '"name":"Widget"');
     });
 });
 
 it('marks conversation as failed on exception', function () {
-    Storage::put('documents/test.csv', 'name,price');
+    Storage::put('documents/test.csv', "name,price\nWidget,9.99");
 
     $conversation = DocumentConversation::factory()->create([
         'stored_path' => 'documents/test.csv',
@@ -109,7 +109,7 @@ it('marks conversation as failed on exception', function () {
 });
 
 it('sets status to processing during execution', function () {
-    Storage::put('documents/test.csv', 'name,price');
+    Storage::put('documents/test.csv', "name,price\nWidget,9.99");
 
     $conversation = DocumentConversation::factory()->create([
         'stored_path' => 'documents/test.csv',

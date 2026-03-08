@@ -29,15 +29,15 @@ class ProcessDocumentJob implements ShouldQueue
 
         $supplier = $this->conversation->supplier;
 
-        $csvContent = $this->parseDocumentToCsv();
+        $documentData = $this->parseDocument();
 
-        $prompt = $this->buildPrompt($csvContent);
+        $prompt = $this->buildPrompt($documentData);
 
         $agent = new DocumentProcessor($supplier);
 
         $response = $agent->prompt(
             $prompt,
-            timeout: 300,
+            timeout: 600,
         );
 
         if ($response['needs_clarification']) {
@@ -71,7 +71,7 @@ class ProcessDocumentJob implements ShouldQueue
         ]);
     }
 
-    private function parseDocumentToCsv(): string
+    private function parseDocument(): string
     {
         $filePath = Storage::path($this->conversation->stored_path);
         $extension = strtolower(pathinfo($this->conversation->original_filename, PATHINFO_EXTENSION));
@@ -83,11 +83,24 @@ class ProcessDocumentJob implements ShouldQueue
 
         $reader->open($filePath);
 
+        $headers = [];
         $rows = [];
+
         foreach ($reader->getSheetIterator() as $sheet) {
-            foreach ($sheet->getRowIterator() as $row) {
+            foreach ($sheet->getRowIterator() as $index => $row) {
                 $cells = array_map(fn ($cell) => (string) $cell->getValue(), $row->getCells());
-                $rows[] = $cells;
+
+                if ($index === 1) {
+                    $headers = $cells;
+
+                    continue;
+                }
+
+                $rowData = [];
+                foreach ($headers as $colIndex => $header) {
+                    $rowData[$header] = $cells[$colIndex] ?? '';
+                }
+                $rows[] = $rowData;
             }
 
             break; // Only process the first sheet
@@ -95,18 +108,10 @@ class ProcessDocumentJob implements ShouldQueue
 
         $reader->close();
 
-        $output = fopen('php://memory', 'r+');
-        foreach ($rows as $row) {
-            fputcsv($output, $row);
-        }
-        rewind($output);
-        $csvString = stream_get_contents($output);
-        fclose($output);
-
-        return $csvString;
+        return json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-    private function buildPrompt(string $csvContent): string
+    private function buildPrompt(string $documentData): string
     {
         $prompt = "Process the following product data and transform it into the standardized output CSV format.\n";
         $prompt .= "The source file is: {$this->conversation->original_filename}\n";
@@ -115,7 +120,7 @@ class ProcessDocumentJob implements ShouldQueue
             $prompt .= "\nAdditional context provided by the user:\n{$this->conversation->user_context}\n";
         }
 
-        $prompt .= "\n## Source Document Data (CSV)\n```csv\n{$csvContent}```\n";
+        $prompt .= "\n## Source Document Data (JSON)\nEach object represents one row. Keys are the original column headers.\n```json\n{$documentData}\n```\n";
 
         return $prompt;
     }
