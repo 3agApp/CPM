@@ -78,13 +78,16 @@ it('includes user context in the prompt when provided', function () {
     (new ProcessDocumentJob($conversation))->handle();
 
     DocumentProcessor::assertPrompted(function ($prompt) {
-        return str_contains($prompt->prompt, 'The VAT rate is 8.1%');
+        return str_contains($prompt->prompt, 'The VAT rate is 8.1%')
+            && str_contains($prompt->prompt, 'name,price');
     });
 });
 
 it('marks conversation as failed on exception', function () {
+    Storage::put('documents/test.csv', 'name,price');
+
     $conversation = DocumentConversation::factory()->create([
-        'stored_path' => 'documents/nonexistent.csv',
+        'stored_path' => 'documents/test.csv',
         'original_filename' => 'test.csv',
     ]);
 

@@ -17,7 +17,7 @@ use Stringable;
 
 #[Provider(Lab::Gemini)]
 #[UseSmartestModel]
-#[MaxTokens(16384)]
+#[MaxTokens(65536)]
 #[Temperature(0.2)]
 #[Timeout(300)]
 class DocumentProcessor implements Agent, HasStructuredOutput
