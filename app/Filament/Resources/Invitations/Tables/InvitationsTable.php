@@ -1,49 +1,25 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Resources\Invitations\Tables;
 
-use App\Enums\Role;
-use App\Filament\Resources\InvitationResource\Pages;
 use App\Mail\InvitationMail;
 use App\Models\Invitation;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
-class InvitationResource extends Resource
+class InvitationsTable
 {
-    protected static ?string $model = Invitation::class;
-
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
-
-    protected static ?string $navigationLabel = 'Invitations';
-
-    public static function form(Schema $schema): Schema
-    {
-        return $schema
-            ->components([
-                TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->maxLength(255),
-                Select::make('role')
-                    ->options(fn () => collect([Role::Admin, Role::Member])
-                        ->mapWithKeys(fn (Role $role) => [$role->value => $role->getLabel()]))
-                    ->default(Role::Member->value)
-                    ->required(),
-            ]);
-    }
-
-    public static function table(Table $table): Table
+    public static function configure(Table $table): Table
     {
         return $table
             ->columns([
                 TextColumn::make('email')
+                    ->label('Email address')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('role')
@@ -67,7 +43,7 @@ class InvitationResource extends Resource
                         default => 'warning',
                     }),
                 TextColumn::make('inviter.name')
-                    ->label('Invited By')
+                    ->label('Invited by')
                     ->placeholder('—'),
                 TextColumn::make('expires_at')
                     ->dateTime()
@@ -77,8 +53,11 @@ class InvitationResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->actions([
-                \Filament\Actions\Action::make('resend')
+            ->defaultSort('created_at', 'desc')
+            ->emptyStateHeading('No invitations found')
+            ->emptyStateDescription('Invite your first teammate to this organization.')
+            ->recordActions([
+                Action::make('resend')
                     ->label('Resend')
                     ->icon('heroicon-o-arrow-path')
                     ->requiresConfirmation()
@@ -90,22 +69,14 @@ class InvitationResource extends Resource
 
                         Mail::to($record->email)->send(new InvitationMail($record));
 
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->success()
                             ->title('Invitation resent')
                             ->send();
                     })
                     ->visible(fn (Invitation $record): bool => $record->isPending() || $record->isExpired()),
-                \Filament\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->label('Revoke'),
             ]);
-    }
-
-    public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ListInvitations::route('/'),
-            'create' => Pages\CreateInvitation::route('/create'),
-        ];
     }
 }

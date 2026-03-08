@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\InvitationResource\Pages;
+namespace App\Filament\Resources\Invitations\Pages;
 
-use App\Filament\Resources\InvitationResource;
+use App\Filament\Resources\Invitations\InvitationResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListInvitations extends ListRecords
@@ -12,7 +13,7 @@ class ListInvitations extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

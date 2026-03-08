@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\InvitationResource\Pages;
+namespace App\Filament\Resources\Invitations\Pages;
 
-use App\Filament\Resources\InvitationResource;
+use App\Filament\Resources\Invitations\InvitationResource;
 use App\Mail\InvitationMail;
 use App\Models\Invitation;
 use Filament\Facades\Filament;
@@ -38,6 +38,7 @@ class CreateInvitation extends CreateRecord
             ->whereNull('accepted_at')
             ->first();
 
+        /** @var Invitation|null $existingInvitation */
         if ($existingInvitation) {
             $existingInvitation->update([
                 'role' => $data['role'],
