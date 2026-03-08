@@ -4,7 +4,9 @@ namespace App\Jobs;
 
 use App\Ai\Agents\DocumentProcessor;
 use App\Enums\ConversationStatus;
+use App\Filament\Resources\DocumentConversations\DocumentConversationResource;
 use App\Models\DocumentConversation;
+use Filament\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -48,6 +50,12 @@ class ProcessDocumentJob implements ShouldQueue
                 'ai_question' => $response['question'],
             ]);
 
+            $this->notifyUser(
+                'AI needs more information',
+                "The AI has a question about \"{$this->conversation->original_filename}\".",
+                'warning',
+            );
+
             return;
         }
 
@@ -58,6 +66,12 @@ class ProcessDocumentJob implements ShouldQueue
             'status' => ConversationStatus::Completed,
             'output_path' => $outputPath,
         ]);
+
+        $this->notifyUser(
+            'Document processed successfully',
+            "The file \"{$this->conversation->original_filename}\" has been processed and is ready for download.",
+            'success',
+        );
     }
 
     public function failed(Throwable $exception): void
@@ -71,6 +85,36 @@ class ProcessDocumentJob implements ShouldQueue
             'status' => ConversationStatus::Failed,
             'error_message' => $exception->getMessage(),
         ]);
+
+        $this->notifyUser(
+            'Document processing failed',
+            "Failed to process \"{$this->conversation->original_filename}\": {$exception->getMessage()}",
+            'danger',
+        );
+    }
+
+    private function notifyUser(string $title, string $body, string $color): void
+    {
+        $user = $this->conversation->user;
+
+        if (! $user) {
+            return;
+        }
+
+        $notification = Notification::make()
+            ->title($title)
+            ->body($body)
+            ->{$color}()
+            ->actions([
+                \Filament\Actions\Action::make('view')
+                    ->label('View')
+                    ->url(DocumentConversationResource::getUrl('view', [
+                        'record' => $this->conversation,
+                        'tenant' => $this->conversation->supplier->organization,
+                    ])),
+            ]);
+
+        $notification->sendToDatabase($user);
     }
 
     private function parseDocument(): string

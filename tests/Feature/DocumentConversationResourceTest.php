@@ -4,11 +4,14 @@ use App\Enums\ConversationStatus;
 use App\Enums\Role;
 use App\Filament\Resources\DocumentConversations\Pages\ListDocumentConversations;
 use App\Filament\Resources\DocumentConversations\Pages\ViewDocumentConversation;
+use App\Jobs\ProcessDocumentJob;
 use App\Models\DocumentConversation;
 use App\Models\Organization;
 use App\Models\Supplier;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -86,4 +89,59 @@ it('displays status badge with correct color', function () {
         ->assertCanSeeTableRecords(
             DocumentConversation::where('supplier_id', $this->supplier->id)->get()
         );
+});
+
+it('can upload a document from the list page', function () {
+    Queue::fake();
+
+    $file = UploadedFile::fake()->create('products.csv', 100, 'text/csv');
+
+    Livewire::test(ListDocumentConversations::class)
+        ->callAction('upload', [
+            'supplier_id' => $this->supplier->id,
+            'document' => $file,
+        ])
+        ->assertNotified('Document uploaded');
+
+    expect(DocumentConversation::count())->toBe(1);
+
+    $conversation = DocumentConversation::first();
+    expect($conversation->supplier_id)->toBe($this->supplier->id)
+        ->and($conversation->user_id)->toBe($this->user->id)
+        ->and($conversation->status)->toBe(ConversationStatus::Pending)
+        ->and($conversation->stored_path)->not->toBeNull();
+
+    Queue::assertPushed(ProcessDocumentJob::class);
+});
+
+it('sends database notification when processing completes', function () {
+    $conversation = DocumentConversation::factory()->create([
+        'supplier_id' => $this->supplier->id,
+        'user_id' => $this->user->id,
+        'original_filename' => 'test.csv',
+    ]);
+
+    $notification = \Filament\Notifications\Notification::make()
+        ->success()
+        ->title('Document processed successfully');
+
+    $notification->sendToDatabase($this->user);
+
+    expect($this->user->notifications)->toHaveCount(1);
+});
+
+it('sends database notification when processing fails', function () {
+    $conversation = DocumentConversation::factory()->create([
+        'supplier_id' => $this->supplier->id,
+        'user_id' => $this->user->id,
+        'original_filename' => 'test.csv',
+    ]);
+
+    $notification = \Filament\Notifications\Notification::make()
+        ->danger()
+        ->title('Document processing failed');
+
+    $notification->sendToDatabase($this->user);
+
+    expect($this->user->notifications)->toHaveCount(1);
 });

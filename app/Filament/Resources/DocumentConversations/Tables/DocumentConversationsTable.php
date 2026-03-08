@@ -57,7 +57,7 @@ class DocumentConversationsTable
                     ->options(ConversationStatus::class),
             ])
             ->emptyStateHeading('No document conversations')
-            ->emptyStateDescription('Upload a document via the API to start processing.')
+            ->emptyStateDescription('Upload a document using the button above to start processing.')
             ->recordActions([
                 Action::make('view')
                     ->label('View')
