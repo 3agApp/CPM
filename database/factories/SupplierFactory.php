@@ -18,6 +18,7 @@ class SupplierFactory extends Factory
         return [
             'organization_id' => Organization::factory(),
             'name' => fake()->company(),
+            'ai_context' => fake()->optional()->paragraph(),
             'article_number_prefix' => strtoupper(fake()->lexify('???')),
             'default_wg1' => fake()->words(2, true),
             'default_wg2' => fake()->words(2, true),

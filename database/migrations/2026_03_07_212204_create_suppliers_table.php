@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
             $table->string('name');
+            $table->text('ai_context')->nullable();
             $table->string('article_number_prefix')->nullable();
             $table->string('default_wg1')->nullable();
             $table->string('default_wg2')->nullable();

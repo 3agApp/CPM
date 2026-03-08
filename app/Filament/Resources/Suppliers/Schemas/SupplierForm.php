@@ -6,6 +6,7 @@ use App\Models\Supplier;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -26,6 +27,12 @@ class SupplierForm
                             ->minLength(2)
                             ->maxLength(255)
                             ->placeholder('e.g. LEGO Deutschland GmbH'),
+                        Textarea::make('ai_context')
+                            ->label('AI context')
+                            ->rows(6)
+                            ->placeholder('Add supplier-specific context for AI-assisted workflows.')
+                            ->helperText('Used to give AI tools supplier-specific instructions or background.')
+                            ->columnSpanFull(),
                         TextInput::make('article_number_prefix')
                             ->label('Article number prefix')
                             ->maxLength(255)

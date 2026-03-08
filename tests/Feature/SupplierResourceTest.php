@@ -22,6 +22,7 @@ it('can create a supplier with configuration fields from the filament resource f
     Livewire::test(CreateSupplier::class)
         ->fillForm([
             'name' => 'LEGO Deutschland GmbH',
+            'ai_context' => 'Treat LEGO as a premium toy brand with strict category naming and consistent SKU prefixes.',
             'article_number_prefix' => 'LEGO',
             'default_wg1' => 'Bausteine',
             'default_wg2' => 'LEGO Sets',
@@ -43,6 +44,7 @@ it('can create a supplier with configuration fields from the filament resource f
         ->not->toBeNull()
         ->and($supplier->organization->is($organization))->toBeTrue()
         ->and($supplier->name)->toBe('LEGO Deutschland GmbH')
+        ->and($supplier->ai_context)->toBe('Treat LEGO as a premium toy brand with strict category naming and consistent SKU prefixes.')
         ->and($supplier->article_number_prefix)->toBe('LEGO')
         ->and($supplier->default_wg1)->toBe('Bausteine')
         ->and($supplier->default_wg2)->toBe('LEGO Sets')

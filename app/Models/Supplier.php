@@ -14,6 +14,7 @@ class Supplier extends Model
     protected $fillable = [
         'organization_id',
         'name',
+        'ai_context',
         'article_number_prefix',
         'default_wg1',
         'default_wg2',
