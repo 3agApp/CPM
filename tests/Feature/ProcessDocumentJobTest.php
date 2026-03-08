@@ -79,7 +79,8 @@ it('includes user context in the prompt when provided', function () {
 
     DocumentProcessor::assertPrompted(function ($prompt) {
         return str_contains($prompt->prompt, 'The VAT rate is 8.1%')
-            && str_contains($prompt->prompt, '"name":"Widget"');
+            && str_contains($prompt->prompt, 'Widget')
+            && str_contains($prompt->prompt, '9.99');
     });
 });
 
@@ -128,4 +129,30 @@ it('sets status to processing during execution', function () {
     });
 
     (new ProcessDocumentJob($conversation))->handle();
+});
+
+it('skips empty rows and preserves all columns', function () {
+    Storage::put('documents/test.csv', "name,price,note\nWidget,9.99,good\n,,");
+
+    $conversation = DocumentConversation::factory()->create([
+        'stored_path' => 'documents/test.csv',
+        'original_filename' => 'test.csv',
+    ]);
+
+    DocumentProcessor::fake(function () {
+        return [
+            'needs_clarification' => false,
+            'question' => null,
+            'csv_output' => 'Artnr,Wg1,Wg2',
+        ];
+    });
+
+    (new ProcessDocumentJob($conversation))->handle();
+
+    DocumentProcessor::assertPrompted(function ($prompt) {
+        // Should contain header row + 1 data row (empty row skipped)
+        // Data is a 2D array, so all columns are preserved
+        return str_contains($prompt->prompt, '["name","price","note"]')
+            && str_contains($prompt->prompt, '["Widget","9.99","good"]');
+    });
 });

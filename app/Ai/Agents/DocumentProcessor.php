@@ -32,8 +32,14 @@ class DocumentProcessor implements Agent, HasStructuredOutput
 
         return <<<INSTRUCTIONS
         You are a product data processor for a catalog/product management system.
-        Your task is to process uploaded product data (provided as JSON array) and transform it into a standardized output CSV format.
-        The source data is provided as a JSON array of objects, where each object represents a row and keys are column headers from the original document.
+        Your task is to process uploaded product data (provided as a JSON 2D array) and transform it into a standardized output CSV format.
+
+        ## Understanding the Source Data
+        The source data is a JSON array of arrays (rows of cells) extracted from a spreadsheet.
+        You must analyze the structure to identify:
+        - Which row contains the column headers (it may not be the first row — skip metadata, titles, or blank rows)
+        - Which columns map to which output fields (use header names and cell values to infer)
+        - Where the actual product data rows begin and end
 
         ## Supplier Context
         {$supplierContext}
