@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\Role;
-use App\Filament\Resources\SupplierResource\Pages\CreateSupplier;
+use App\Filament\Resources\Suppliers\Pages\CreateSupplier;
 use App\Models\Organization;
 use App\Models\Supplier;
 use App\Models\User;

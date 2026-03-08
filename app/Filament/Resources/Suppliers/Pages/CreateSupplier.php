@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\SupplierResource\Pages;
+namespace App\Filament\Resources\Suppliers\Pages;
 
-use App\Filament\Resources\SupplierResource;
+use App\Filament\Resources\Suppliers\SupplierResource;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
