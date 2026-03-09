@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\DocumentConversations\Pages;
 
 use App\Enums\ConversationStatus;
+use App\Enums\MessageRole;
 use App\Filament\Resources\DocumentConversations\DocumentConversationResource;
 use App\Jobs\ProcessDocumentJob;
 use App\Models\DocumentConversation;
@@ -12,6 +13,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Storage;
 
@@ -42,21 +44,10 @@ class ViewDocumentConversation extends ViewRecord
                             ->label('Last updated')
                             ->dateTime(),
                     ]),
-                Section::make('AI Question')
+                Section::make('Conversation')
                     ->columnSpanFull()
-                    ->visible(fn (DocumentConversation $record): bool => $record->needsContext())
                     ->schema([
-                        TextEntry::make('ai_question')
-                            ->label('The AI needs more information')
-                            ->columnSpanFull(),
-                    ]),
-                Section::make('User Context')
-                    ->columnSpanFull()
-                    ->visible(fn (DocumentConversation $record): bool => $record->user_context !== null)
-                    ->schema([
-                        TextEntry::make('user_context')
-                            ->label('Context provided')
-                            ->columnSpanFull(),
+                        View::make('filament.schemas.components.message-timeline'),
                     ]),
                 Section::make('Error')
                     ->columnSpanFull()
@@ -72,20 +63,30 @@ class ViewDocumentConversation extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('provideContext')
-                ->label('Provide Context')
+            Action::make('sendMessage')
+                ->label(fn (DocumentConversation $record): string => $record->needsContext()
+                    ? 'Reply to AI'
+                    : 'Request Changes')
                 ->icon('heroicon-o-chat-bubble-left-right')
-                ->color('warning')
+                ->color(fn (DocumentConversation $record): string => $record->needsContext()
+                    ? 'warning'
+                    : 'info')
                 ->form([
-                    Textarea::make('context')
-                        ->label('Additional context')
+                    Textarea::make('message')
+                        ->label('Message')
                         ->required()
                         ->rows(4)
-                        ->placeholder('Provide the information the AI is asking for...'),
+                        ->placeholder(fn (DocumentConversation $record): string => $record->needsContext()
+                            ? 'Answer the AI\'s question...'
+                            : 'Describe the changes you want...'),
                 ])
                 ->action(function (DocumentConversation $record, array $data): void {
+                    $record->messages()->create([
+                        'role' => MessageRole::User,
+                        'content' => $data['message'],
+                    ]);
+
                     $record->update([
-                        'user_context' => $data['context'],
                         'ai_question' => null,
                         'status' => ConversationStatus::Pending,
                     ]);
@@ -94,11 +95,11 @@ class ViewDocumentConversation extends ViewRecord
 
                     Notification::make()
                         ->success()
-                        ->title('Context provided')
-                        ->body('The document will be reprocessed with the additional context.')
+                        ->title('Message sent')
+                        ->body('The document will be reprocessed with your feedback.')
                         ->send();
                 })
-                ->visible(fn (DocumentConversation $record): bool => $record->needsContext()),
+                ->visible(fn (DocumentConversation $record): bool => $record->needsContext() || $record->isCompleted()),
 
             Action::make('retry')
                 ->label('Retry')

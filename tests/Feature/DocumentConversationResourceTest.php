@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ConversationStatus;
+use App\Enums\MessageRole;
 use App\Enums\Role;
 use App\Filament\Resources\DocumentConversations\Pages\ListDocumentConversations;
 use App\Filament\Resources\DocumentConversations\Pages\ViewDocumentConversation;
@@ -54,18 +55,6 @@ it('can view a document conversation', function () {
         ->assertSuccessful();
 });
 
-it('shows ai question for conversations needing context', function () {
-    $conversation = DocumentConversation::factory()->needsContext()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
-        'ai_question' => 'What is the VAT rate?',
-    ]);
-
-    Livewire::test(ViewDocumentConversation::class, ['record' => $conversation->id])
-        ->assertSuccessful()
-        ->assertSee('What is the VAT rate?');
-});
-
 it('shows error message for failed conversations', function () {
     $conversation = DocumentConversation::factory()->failed()->create([
         'supplier_id' => $this->supplier->id,
@@ -91,7 +80,35 @@ it('displays status badge with correct color', function () {
         );
 });
 
-it('can upload a document from the list page', function () {
+it('can upload a document with notes from the list page', function () {
+    Queue::fake();
+
+    $file = UploadedFile::fake()->create('products.csv', 100, 'text/csv');
+
+    Livewire::test(ListDocumentConversations::class)
+        ->callAction('upload', [
+            'supplier_id' => $this->supplier->id,
+            'document' => $file,
+            'notes' => 'VAT rate is 8.1%',
+        ])
+        ->assertNotified('Document uploaded');
+
+    expect(DocumentConversation::count())->toBe(1);
+
+    $conversation = DocumentConversation::first();
+    expect($conversation->supplier_id)->toBe($this->supplier->id)
+        ->and($conversation->user_id)->toBe($this->user->id)
+        ->and($conversation->status)->toBe(ConversationStatus::Pending)
+        ->and($conversation->stored_path)->not->toBeNull();
+
+    $message = $conversation->messages()->first();
+    expect($message->role)->toBe(MessageRole::User)
+        ->and($message->content)->toBe('VAT rate is 8.1%');
+
+    Queue::assertPushed(ProcessDocumentJob::class);
+});
+
+it('can upload a document without notes', function () {
     Queue::fake();
 
     $file = UploadedFile::fake()->create('products.csv', 100, 'text/csv');
@@ -103,13 +120,54 @@ it('can upload a document from the list page', function () {
         ])
         ->assertNotified('Document uploaded');
 
-    expect(DocumentConversation::count())->toBe(1);
-
     $conversation = DocumentConversation::first();
-    expect($conversation->supplier_id)->toBe($this->supplier->id)
-        ->and($conversation->user_id)->toBe($this->user->id)
-        ->and($conversation->status)->toBe(ConversationStatus::Pending)
-        ->and($conversation->stored_path)->not->toBeNull();
+    expect($conversation->messages)->toHaveCount(0);
+
+    Queue::assertPushed(ProcessDocumentJob::class);
+});
+
+it('can send a message to request changes on completed conversation', function () {
+    Queue::fake();
+
+    $conversation = DocumentConversation::factory()->completed()->create([
+        'supplier_id' => $this->supplier->id,
+        'user_id' => $this->user->id,
+    ]);
+
+    Livewire::test(ViewDocumentConversation::class, ['record' => $conversation->id])
+        ->callAction('sendMessage', [
+            'message' => 'Please reduce all prices by 10%',
+        ])
+        ->assertNotified('Message sent');
+
+    $conversation->refresh();
+    expect($conversation->status)->toBe(ConversationStatus::Pending);
+
+    $message = $conversation->messages()->first();
+    expect($message->role)->toBe(MessageRole::User)
+        ->and($message->content)->toBe('Please reduce all prices by 10%');
+
+    Queue::assertPushed(ProcessDocumentJob::class);
+});
+
+it('can reply to ai question when conversation needs context', function () {
+    Queue::fake();
+
+    $conversation = DocumentConversation::factory()->needsContext()->create([
+        'supplier_id' => $this->supplier->id,
+        'user_id' => $this->user->id,
+        'ai_question' => 'What is the VAT rate?',
+    ]);
+
+    Livewire::test(ViewDocumentConversation::class, ['record' => $conversation->id])
+        ->callAction('sendMessage', [
+            'message' => 'The VAT rate is 8.1%',
+        ])
+        ->assertNotified('Message sent');
+
+    $conversation->refresh();
+    expect($conversation->status)->toBe(ConversationStatus::Pending)
+        ->and($conversation->ai_question)->toBeNull();
 
     Queue::assertPushed(ProcessDocumentJob::class);
 });

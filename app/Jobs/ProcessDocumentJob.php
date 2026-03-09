@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Ai\Agents\DocumentProcessor;
 use App\Enums\ConversationStatus;
+use App\Enums\MessageRole;
 use App\Filament\Resources\DocumentConversations\DocumentConversationResource;
 use App\Models\DocumentConversation;
 use Filament\Notifications\Notification;
@@ -45,6 +46,11 @@ class ProcessDocumentJob implements ShouldQueue
         );
 
         if ($response['needs_clarification']) {
+            $this->conversation->messages()->create([
+                'role' => MessageRole::Assistant,
+                'content' => $response['question'],
+            ]);
+
             $this->conversation->update([
                 'status' => ConversationStatus::NeedsContext,
                 'ai_question' => $response['question'],
@@ -61,6 +67,11 @@ class ProcessDocumentJob implements ShouldQueue
 
         $outputPath = 'outputs/'.$this->conversation->id.'.csv';
         Storage::put($outputPath, $response['csv_output']);
+
+        $this->conversation->messages()->create([
+            'role' => MessageRole::Assistant,
+            'content' => 'Processing completed. The output CSV has been generated.',
+        ]);
 
         $this->conversation->update([
             'status' => ConversationStatus::Completed,
@@ -173,8 +184,16 @@ class ProcessDocumentJob implements ShouldQueue
         $prompt = "Process the following product data and transform it into the standardized output CSV format.\n";
         $prompt .= "The source file is: {$this->conversation->original_filename}\n";
 
-        if ($this->conversation->user_context) {
-            $prompt .= "\nAdditional context provided by the user:\n{$this->conversation->user_context}\n";
+        $messages = $this->conversation->messages()->orderBy('created_at')->get();
+
+        if ($messages->isNotEmpty()) {
+            $prompt .= "\n## Conversation History\n";
+            $prompt .= "Below is the full history of this conversation. Apply ALL user instructions cumulatively.\n\n";
+
+            foreach ($messages as $message) {
+                $roleLabel = $message->role === MessageRole::User ? 'User' : 'Assistant';
+                $prompt .= "**{$roleLabel}**: {$message->content}\n\n";
+            }
         }
 
         $prompt .= "\n## Source Document Data (JSON)\nThe data is a 2D array where each inner array is a row from the spreadsheet. The first non-empty row is typically the header row, but you must determine the actual structure by examining the content. Some files may have metadata rows before the actual data table.\n```json\n{$documentData}\n```\n";

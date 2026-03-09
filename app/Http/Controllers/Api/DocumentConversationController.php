@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\ConversationStatus;
+use App\Enums\MessageRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ProvideContextRequest;
 use App\Http\Requests\Api\UploadDocumentRequest;
@@ -27,6 +28,13 @@ class DocumentConversationController extends Controller
             'stored_path' => $storedPath,
         ]);
 
+        if ($request->validated('notes')) {
+            $conversation->messages()->create([
+                'role' => MessageRole::User,
+                'content' => $request->validated('notes'),
+            ]);
+        }
+
         ProcessDocumentJob::dispatch($conversation);
 
         return response()->json([
@@ -36,19 +44,23 @@ class DocumentConversationController extends Controller
 
     public function show(DocumentConversation $conversation): DocumentConversationResource
     {
-        return new DocumentConversationResource($conversation);
+        return new DocumentConversationResource($conversation->load('messages'));
     }
 
     public function provideContext(ProvideContextRequest $request, DocumentConversation $conversation): JsonResponse
     {
-        if (! $conversation->needsContext()) {
+        if (! $conversation->needsContext() && ! $conversation->isCompleted()) {
             return response()->json([
-                'message' => 'This conversation is not awaiting additional context.',
+                'message' => 'Messages can only be sent when the conversation needs context or is completed.',
             ], 422);
         }
 
+        $conversation->messages()->create([
+            'role' => MessageRole::User,
+            'content' => $request->validated('context'),
+        ]);
+
         $conversation->update([
-            'user_context' => $request->validated('context'),
             'ai_question' => null,
             'status' => ConversationStatus::Pending,
         ]);
@@ -56,7 +68,7 @@ class DocumentConversationController extends Controller
         ProcessDocumentJob::dispatch($conversation);
 
         return response()->json([
-            'data' => new DocumentConversationResource($conversation->fresh()),
+            'data' => new DocumentConversationResource($conversation->fresh()->load('messages')),
         ]);
     }
 

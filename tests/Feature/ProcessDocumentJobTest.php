@@ -2,6 +2,7 @@
 
 use App\Ai\Agents\DocumentProcessor;
 use App\Enums\ConversationStatus;
+use App\Enums\MessageRole;
 use App\Jobs\ProcessDocumentJob;
 use App\Models\DocumentConversation;
 use Illuminate\Support\Facades\Storage;
@@ -35,6 +36,29 @@ it('processes document and completes when ai returns csv output', function () {
     Storage::assertExists($conversation->output_path);
 });
 
+it('stores completion message when processing succeeds', function () {
+    Storage::put('documents/test.csv', "name,price\nWidget,9.99");
+
+    $conversation = DocumentConversation::factory()->create([
+        'stored_path' => 'documents/test.csv',
+        'original_filename' => 'test.csv',
+    ]);
+
+    DocumentProcessor::fake(function () {
+        return [
+            'needs_clarification' => false,
+            'question' => null,
+            'csv_output' => 'Artnr,Wg1,Wg2',
+        ];
+    });
+
+    (new ProcessDocumentJob($conversation))->handle();
+
+    $message = $conversation->messages()->latest()->first();
+    expect($message->role)->toBe(MessageRole::Assistant)
+        ->and($message->content)->toContain('completed');
+});
+
 it('sets status to needs_context when ai asks a question', function () {
     Storage::put('documents/test.csv', "name,price\nWidget,9.99");
 
@@ -56,15 +80,32 @@ it('sets status to needs_context when ai asks a question', function () {
     $conversation->refresh();
     expect($conversation->status)->toBe(ConversationStatus::NeedsContext)
         ->and($conversation->ai_question)->toBe('What VAT rate should I use?');
+
+    $message = $conversation->messages()->latest()->first();
+    expect($message->role)->toBe(MessageRole::Assistant)
+        ->and($message->content)->toBe('What VAT rate should I use?');
 });
 
-it('includes user context in the prompt when provided', function () {
+it('includes message history in the prompt', function () {
     Storage::put('documents/test.csv', "name,price\nWidget,9.99");
 
     $conversation = DocumentConversation::factory()->create([
         'stored_path' => 'documents/test.csv',
         'original_filename' => 'test.csv',
-        'user_context' => 'The VAT rate is 8.1%',
+    ]);
+
+    // Simulate a prior exchange
+    $conversation->messages()->create([
+        'role' => MessageRole::User,
+        'content' => 'The VAT rate is 8.1%',
+    ]);
+    $conversation->messages()->create([
+        'role' => MessageRole::Assistant,
+        'content' => 'What is the default product group?',
+    ]);
+    $conversation->messages()->create([
+        'role' => MessageRole::User,
+        'content' => 'Use WG1=Electronics, WG2=Cables',
     ]);
 
     DocumentProcessor::fake(function () {
@@ -79,8 +120,9 @@ it('includes user context in the prompt when provided', function () {
 
     DocumentProcessor::assertPrompted(function ($prompt) {
         return str_contains($prompt->prompt, 'The VAT rate is 8.1%')
-            && str_contains($prompt->prompt, 'Widget')
-            && str_contains($prompt->prompt, '9.99');
+            && str_contains($prompt->prompt, 'What is the default product group?')
+            && str_contains($prompt->prompt, 'Use WG1=Electronics, WG2=Cables')
+            && str_contains($prompt->prompt, 'Conversation History');
     });
 });
 

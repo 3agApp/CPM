@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\DocumentConversations\Pages;
 
 use App\Enums\ConversationStatus;
+use App\Enums\MessageRole;
 use App\Filament\Resources\DocumentConversations\DocumentConversationResource;
 use App\Jobs\ProcessDocumentJob;
 use App\Models\DocumentConversation;
@@ -11,6 +12,7 @@ use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -45,6 +47,10 @@ class ListDocumentConversations extends ListRecords
                         ])
                         ->maxSize(10240)
                         ->storeFiles(false),
+                    Textarea::make('notes')
+                        ->label('Additional Instructions')
+                        ->placeholder('e.g. "VAT rate is 8.1%", "Ignore the first 5 rows", "Prices are in EUR"...')
+                        ->rows(3),
                 ])
                 ->action(function (array $data): void {
                     /** @var TemporaryUploadedFile $file */
@@ -58,6 +64,13 @@ class ListDocumentConversations extends ListRecords
                         'original_filename' => $file->getClientOriginalName(),
                         'stored_path' => $storedPath,
                     ]);
+
+                    if (! empty($data['notes'])) {
+                        $conversation->messages()->create([
+                            'role' => MessageRole::User,
+                            'content' => $data['notes'],
+                        ]);
+                    }
 
                     ProcessDocumentJob::dispatch($conversation);
 

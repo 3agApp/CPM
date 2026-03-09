@@ -19,6 +19,7 @@ class UploadDocumentRequest extends FormRequest
         return [
             'supplier_id' => ['required', 'integer', 'exists:suppliers,id'],
             'document' => ['required', 'file', 'mimes:csv,xlsx,xls,txt', 'max:10240'],
+            'notes' => ['nullable', 'string', 'max:10000'],
         ];
     }
 
