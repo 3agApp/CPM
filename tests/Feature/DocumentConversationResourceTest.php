@@ -63,13 +63,16 @@ it('renders conversation messages as safe markdown', function () {
 
     $conversation->messages()->create([
         'role' => MessageRole::Assistant,
-        'content' => "# Summary\n\n- First item\n- **Bold detail**\n\n<script>alert('xss')</script>",
+        'content' => "# Summary\n\n- First item\n- **Bold detail**\n\n```\ntotal = 42\n```\n\n| Name | Price |\n| --- | ---: |\n| Cable | 9.99 |\n\n<script>alert('xss')</script>",
     ]);
 
     Livewire::test(ViewDocumentConversation::class, ['record' => $conversation->id])
         ->assertSuccessful()
+        ->assertSee('message-markdown')
         ->assertSeeHtml('<h1>Summary</h1>', false)
         ->assertSeeHtml('<strong>Bold detail</strong>', false)
+        ->assertSeeHtml('<pre><code>', false)
+        ->assertSeeHtml('<table>', false)
         ->assertDontSee('<script>', false);
 });
 

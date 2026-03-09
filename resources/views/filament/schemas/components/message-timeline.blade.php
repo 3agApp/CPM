@@ -27,7 +27,7 @@
                     {{ $message->role === \App\Enums\MessageRole::User ? 'You' : 'AI Assistant' }}
                 </div>
 
-                <div class="fi-prose max-w-none text-sm text-gray-950 dark:text-white">
+                <div class="message-markdown fi-prose max-w-none text-sm text-gray-950 dark:text-white">
                     {!! 
                         \Illuminate\Support\Str::markdown($message->content, $markdownOptions)
                     !!}
