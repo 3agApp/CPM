@@ -1,6 +1,10 @@
 @php
     $record = $getRecord();
     $messages = $record->messages()->orderBy('created_at')->get();
+    $markdownOptions = [
+        'html_input' => 'strip',
+        'allow_unsafe_links' => false,
+    ];
 @endphp
 
 <div class="space-y-3">
@@ -23,7 +27,11 @@
                     {{ $message->role === \App\Enums\MessageRole::User ? 'You' : 'AI Assistant' }}
                 </div>
 
-                <div class="text-sm text-gray-950 dark:text-white whitespace-pre-wrap">{{ $message->content }}</div>
+                <div class="fi-prose max-w-none text-sm text-gray-950 dark:text-white">
+                    {!! 
+                        \Illuminate\Support\Str::markdown($message->content, $markdownOptions)
+                    !!}
+                </div>
 
                 <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">
                     {{ $message->created_at->diffForHumans() }}
