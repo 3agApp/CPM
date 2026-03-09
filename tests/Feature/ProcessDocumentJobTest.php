@@ -5,10 +5,28 @@ use App\Enums\ConversationStatus;
 use App\Enums\MessageRole;
 use App\Jobs\ProcessDocumentJob;
 use App\Models\DocumentConversation;
+use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     Storage::fake();
+});
+
+it('marks every document processor response field as required', function () {
+    $processor = new DocumentProcessor($this->createMock(\App\Models\Supplier::class));
+
+    $schema = (new JsonSchemaTypeFactory)
+        ->object($processor->schema(new JsonSchemaTypeFactory))
+        ->toArray();
+
+    expect($schema['required'])
+        ->toBe([
+            'needs_clarification',
+            'question',
+            'csv_output',
+        ])
+        ->and($schema['properties']['question']['type'])->toBe('string')
+        ->and($schema['properties']['csv_output']['type'])->toBe('string');
 });
 
 it('processes document and completes when ai returns csv output', function () {

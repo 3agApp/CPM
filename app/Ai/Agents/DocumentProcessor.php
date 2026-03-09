@@ -6,7 +6,6 @@ use App\Models\Supplier;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Attributes\MaxTokens;
 use Laravel\Ai\Attributes\Provider;
-use Laravel\Ai\Attributes\Temperature;
 use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Attributes\UseSmartestModel;
 use Laravel\Ai\Contracts\Agent;
@@ -15,10 +14,9 @@ use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Promptable;
 use Stringable;
 
-#[Provider(Lab::Anthropic)]
+#[Provider(Lab::OpenAI)]
 #[UseSmartestModel]
 #[MaxTokens(65536)]
-#[Temperature(0.2)]
 #[Timeout(600)]
 class DocumentProcessor implements Agent, HasStructuredOutput
 {
@@ -100,8 +98,8 @@ class DocumentProcessor implements Agent, HasStructuredOutput
     {
         return [
             'needs_clarification' => $schema->boolean()->required(),
-            'question' => $schema->string()->nullable(),
-            'csv_output' => $schema->string()->nullable(),
+            'question' => $schema->string()->required(),
+            'csv_output' => $schema->string()->required(),
         ];
     }
 
