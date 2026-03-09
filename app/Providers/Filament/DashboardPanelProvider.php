@@ -31,6 +31,7 @@ class DashboardPanelProvider extends PanelProvider
             ->id('dashboard')
             ->path('dashboard')
             ->brandName('CPM')
+            ->viteTheme('resources/css/filament/dashboard/theme.css')
             ->login()
             ->registration(Register::class)
             ->databaseNotifications()
