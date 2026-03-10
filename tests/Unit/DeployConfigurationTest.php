@@ -25,11 +25,9 @@ it('includes the deployer scaffold for production deployments', function () {
         ->toContain("getenv('DEPLOY_REMOTE_USER')")
         ->toContain("set('writable_mode', 'acl');")
         ->toContain("task('build:assets'")
-        ->toContain("task('deploy:ensure_metadata_dir'")
         ->toContain("task('upload:assets'")
         ->toContain("task('queue:restart'")
         ->toContain("before('deploy', 'build:assets');")
-        ->toContain("before('deploy:lock', 'deploy:ensure_metadata_dir');")
         ->toContain("after('deploy:vendors', 'upload:assets');")
         ->toContain("after('deploy:symlink', 'queue:restart');");
 

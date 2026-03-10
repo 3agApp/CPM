@@ -77,10 +77,6 @@ host($hostname)
     ->set('http_user', $httpUser)
     ->set('port', $sshPort);
 
-task('deploy:ensure_metadata_dir', function () {
-    run('mkdir -p {{deploy_path}}/.dep');
-})->desc('Ensure deployment metadata directory exists');
-
 /*
 |--------------------------------------------------------------------------
 | Local Asset Build
@@ -142,7 +138,6 @@ task('queue:restart', function () {
 */
 
 before('deploy', 'build:assets');
-before('deploy:lock', 'deploy:ensure_metadata_dir');
 after('deploy:vendors', 'upload:assets');
 after('deploy:symlink', 'queue:restart');
 after('deploy:failed', 'deploy:unlock');
