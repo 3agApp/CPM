@@ -55,6 +55,8 @@ jobs:
         env:
           DEPLOY_HOSTNAME: ${{ vars.DEPLOY_HOSTNAME }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-          DEPLOY_SSH_PORT: ${{ secrets.DEPLOY_SSH_PORT }}
+          DEPLOY_SSH_PORT: ${{ vars.DEPLOY_SSH_PORT }}
           DEPLOY_REPOSITORY: ${{ github.server_url }}/${{ github.repository }}.git
+          DEPLOY_REMOTE_USER: ${{ vars.DEPLOY_REMOTE_USER }}
+          DEPLOY_HTTP_USER: ${{ vars.DEPLOY_HTTP_USER }}
           DEPLOY_BRANCH: main

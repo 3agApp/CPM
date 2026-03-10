@@ -42,9 +42,10 @@ set('writable_mode', 'chmod');
 
 $hostname = getenv('DEPLOY_HOSTNAME');
 $deployPath = getenv('DEPLOY_PATH');
-$sshPort = getenv('DEPLOY_SSH_PORT');
+$sshPort = getenv('DEPLOY_SSH_PORT') ?: '22';
 $repository = getenv('DEPLOY_REPOSITORY');
-$remoteUser = 'sourov';
+$remoteUser = getenv('DEPLOY_REMOTE_USER');
+$httpUser = getenv('DEPLOY_HTTP_USER') ?: 'www-data';
 
 if (! $hostname) {
     throw new \RuntimeException('DEPLOY_HOSTNAME environment variable is required');
@@ -54,12 +55,12 @@ if (! $deployPath) {
     throw new \RuntimeException('DEPLOY_PATH environment variable is required');
 }
 
-if (! $sshPort) {
-    throw new \RuntimeException('DEPLOY_SSH_PORT environment variable is required');
-}
-
 if (! $repository) {
     throw new \RuntimeException('DEPLOY_REPOSITORY environment variable is required');
+}
+
+if (! $remoteUser) {
+    throw new \RuntimeException('DEPLOY_REMOTE_USER environment variable is required');
 }
 
 set('repository', $repository);
@@ -73,8 +74,12 @@ set('repository', $repository);
 host($hostname)
     ->set('remote_user', $remoteUser)
     ->set('deploy_path', $deployPath)
-    ->set('http_user', 'www-data')
+    ->set('http_user', $httpUser)
     ->set('port', $sshPort);
+
+task('deploy:ensure_metadata_dir', function () {
+    run('mkdir -p {{deploy_path}}/.dep');
+})->desc('Ensure deployment metadata directory exists');
 
 /*
 |--------------------------------------------------------------------------
@@ -137,6 +142,7 @@ task('queue:restart', function () {
 */
 
 before('deploy', 'build:assets');
+before('deploy:lock', 'deploy:ensure_metadata_dir');
 after('deploy:vendors', 'upload:assets');
 after('deploy:symlink', 'queue:restart');
 after('deploy:failed', 'deploy:unlock');

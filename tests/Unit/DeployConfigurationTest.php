@@ -21,11 +21,14 @@ it('includes the deployer scaffold for production deployments', function () {
     expect($deployConfig)
         ->toContain("require 'recipe/laravel.php';")
         ->toContain("getenv('DEPLOY_HOSTNAME')")
+        ->toContain("getenv('DEPLOY_HTTP_USER')")
         ->toContain("getenv('DEPLOY_REMOTE_USER')")
         ->toContain("task('build:assets'")
+        ->toContain("task('deploy:ensure_metadata_dir'")
         ->toContain("task('upload:assets'")
         ->toContain("task('queue:restart'")
         ->toContain("before('deploy', 'build:assets');")
+        ->toContain("before('deploy:lock', 'deploy:ensure_metadata_dir');")
         ->toContain("after('deploy:vendors', 'upload:assets');")
         ->toContain("after('deploy:symlink', 'queue:restart');");
 
