@@ -13,6 +13,7 @@
         "laravel/tinker": "^2.10.1"
     },
     "require-dev": {
+        "deployer/deployer": "^7.5",
         "fakerphp/faker": "^1.23",
         "laravel/boost": "^2.0",
         "laravel/pail": "^1.2.2",
@@ -43,6 +44,9 @@
             "@php artisan migrate --force",
             "npm install",
             "npm run build"
+        ],
+        "deploy": [
+            "dep deploy"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
