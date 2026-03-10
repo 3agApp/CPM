@@ -26,12 +26,12 @@ it('has members relationship', function () {
         ->and($organization->members->first()->pivot->role)->toBe(Role::Owner->value);
 });
 
-it('has suppliers relationship', function () {
+it('has brands relationship', function () {
     $organization = Organization::factory()->create();
 
-    $organization->suppliers()->create(['name' => 'Test Supplier']);
+    $organization->brands()->create(['name' => 'Test Brand']);
 
-    expect($organization->suppliers)->toHaveCount(1);
+    expect($organization->brands)->toHaveCount(1);
 });
 
 it('has invitations relationship', function () {

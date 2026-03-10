@@ -1,14 +1,14 @@
 <?php
 
 use App\Enums\ConversationStatus;
+use App\Models\Brand;
 use App\Models\DocumentConversation;
-use App\Models\Supplier;
 use App\Models\User;
 
-it('belongs to a supplier', function () {
+it('belongs to a brand', function () {
     $conversation = DocumentConversation::factory()->create();
 
-    expect($conversation->supplier)->toBeInstanceOf(Supplier::class);
+    expect($conversation->brand)->toBeInstanceOf(Brand::class);
 });
 
 it('belongs to a user', function () {
@@ -44,20 +44,20 @@ it('uses uuid as primary key', function () {
         ->and(strlen($conversation->id))->toBe(36);
 });
 
-it('cascades delete when supplier is deleted', function () {
-    $supplier = Supplier::factory()->create();
-    DocumentConversation::factory()->count(3)->create(['supplier_id' => $supplier->id]);
+it('cascades delete when brand is deleted', function () {
+    $brand = Brand::factory()->create();
+    DocumentConversation::factory()->count(3)->create(['brand_id' => $brand->id]);
 
-    expect(DocumentConversation::where('supplier_id', $supplier->id)->count())->toBe(3);
+    expect(DocumentConversation::where('brand_id', $brand->id)->count())->toBe(3);
 
-    $supplier->delete();
+    $brand->delete();
 
-    expect(DocumentConversation::where('supplier_id', $supplier->id)->count())->toBe(0);
+    expect(DocumentConversation::where('brand_id', $brand->id)->count())->toBe(0);
 });
 
-it('supplier has document conversations relationship', function () {
-    $supplier = Supplier::factory()->create();
-    DocumentConversation::factory()->count(2)->create(['supplier_id' => $supplier->id]);
+it('brand has document conversations relationship', function () {
+    $brand = Brand::factory()->create();
+    DocumentConversation::factory()->count(2)->create(['brand_id' => $brand->id]);
 
-    expect($supplier->documentConversations)->toHaveCount(2);
+    expect($brand->documentConversations)->toHaveCount(2);
 });

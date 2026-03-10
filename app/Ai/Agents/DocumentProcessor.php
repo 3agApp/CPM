@@ -2,7 +2,7 @@
 
 namespace App\Ai\Agents;
 
-use App\Models\Supplier;
+use App\Models\Brand;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Attributes\MaxTokens;
 use Laravel\Ai\Attributes\Provider;
@@ -22,11 +22,11 @@ class DocumentProcessor implements Agent, HasStructuredOutput
 {
     use Promptable;
 
-    public function __construct(public Supplier $supplier) {}
+    public function __construct(public Brand $brand) {}
 
     public function instructions(): Stringable|string
     {
-        $supplierContext = $this->buildSupplierContext();
+        $brandContext = $this->buildBrandContext();
 
         return <<<INSTRUCTIONS
         You are a product data processor for a catalog/product management system.
@@ -39,17 +39,17 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         - Which columns map to which output fields (use header names and cell values to infer)
         - Where the actual product data rows begin and end
 
-        ## Supplier Context
-        {$supplierContext}
+        ## Brand Context
+        {$brandContext}
 
         ## Output CSV Format
         The output must contain these columns in this exact order:
         Artnr, Wg1, Wg2, Bez1, Bestellnr, Vk1, Vk2, Vk3, Ek, Mwst, Artean, Langtext, Aktiv, Kurztext, HerstellerId, Webshop, Ws_aktiv, Ws_dateavailable, Gewnetto, Gewbrutto, Uspland, Zolltarifnr, Verkaufsmenge, Verkaufsmenge_staffel, Wbztage, Ws_abverkauf, Zolltarifnr_ch, Zolltarifnr_bez, Ursprungsland, Gtin2
 
         ## Column Definitions
-        - Artnr: Article number (use supplier prefix if applicable)
-        - Wg1: Product group level 1 (use supplier default if not in source)
-        - Wg2: Product group level 2 (use supplier default if not in source)
+        - Artnr: Article number (use brand prefix if applicable)
+        - Wg1: Product group level 1 (use brand default if not in source)
+        - Wg2: Product group level 2 (use brand default if not in source)
         - Bez1: Short product name/description
         - Bestellnr: Order number
         - Vk1: Selling price 1 (retail)
@@ -61,7 +61,7 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         - Langtext: Long description (HTML allowed)
         - Aktiv: Active flag (TRUE/FALSE)
         - Kurztext: Short text description
-        - HerstellerId: Manufacturer ID (use supplier default if not in source)
+        - HerstellerId: Manufacturer ID (use brand default if not in source)
         - Webshop: Webshop flag (TRUE/FALSE)
         - Ws_aktiv: Webshop active flag (TRUE/FALSE)
         - Ws_dateavailable: Date available for webshop (DD.MM.YYYY)
@@ -79,13 +79,13 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         - Gtin2: Secondary GTIN/barcode
 
         ## Price Calculation Rules
-        - If only a purchase price (Ek) is provided, calculate selling prices using the supplier margin.
-        - Use the supplier's default rounding rule when calculating prices.
+        - If only a purchase price (Ek) is provided, calculate selling prices using the brand margin.
+        - Use the brand's default rounding rule when calculating prices.
         - Minimum shop margin must be respected.
 
         ## Rules
         1. Map source columns to the output format using context and column name matching.
-        2. Use supplier defaults for missing fields when applicable.
+        2. Use brand defaults for missing fields when applicable.
         3. Set "needs_clarification" to true ONLY if critical data is missing and cannot be inferred.
         4. If you need clarification, provide a clear question in "question" and set "csv_output" to an empty string.
         5. If you do NOT need clarification, set "question" to an empty string and provide the full CSV in "csv_output".
@@ -103,22 +103,22 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         ];
     }
 
-    private function buildSupplierContext(): string
+    private function buildBrandContext(): string
     {
-        $context = "Supplier: {$this->supplier->name}\n";
-        $context .= "Article Number Prefix: {$this->supplier->article_number_prefix}\n";
-        $context .= "Default Wg1: {$this->supplier->default_wg1}\n";
-        $context .= "Default Wg2: {$this->supplier->default_wg2}\n";
-        $context .= "Default Manufacturer ID: {$this->supplier->default_manufacturer_id}\n";
-        $context .= "Default Supplier Margin: {$this->supplier->default_supplier_margin}%\n";
-        $context .= "Minimum Shop Margin: {$this->supplier->minimum_shop_margin}%\n";
-        $context .= "Price Currency: {$this->supplier->price_currency}\n";
-        $context .= "Default Rounding Rule: {$this->supplier->default_rounding_rule}\n";
-        $context .= 'Is Webshop: '.($this->supplier->is_webshop ? 'Yes' : 'No')."\n";
-        $context .= 'Is Webshop Active: '.($this->supplier->is_webshop_active ? 'Yes' : 'No')."\n";
+        $context = "Brand: {$this->brand->name}\n";
+        $context .= "Article Number Prefix: {$this->brand->article_number_prefix}\n";
+        $context .= "Default Wg1: {$this->brand->default_wg1}\n";
+        $context .= "Default Wg2: {$this->brand->default_wg2}\n";
+        $context .= "Default Manufacturer ID: {$this->brand->default_manufacturer_id}\n";
+        $context .= "Default Brand Margin: {$this->brand->default_supplier_margin}%\n";
+        $context .= "Minimum Shop Margin: {$this->brand->minimum_shop_margin}%\n";
+        $context .= "Price Currency: {$this->brand->price_currency}\n";
+        $context .= "Default Rounding Rule: {$this->brand->default_rounding_rule}\n";
+        $context .= 'Is Webshop: '.($this->brand->is_webshop ? 'Yes' : 'No')."\n";
+        $context .= 'Is Webshop Active: '.($this->brand->is_webshop_active ? 'Yes' : 'No')."\n";
 
-        if ($this->supplier->ai_context) {
-            $context .= "\nAdditional Supplier Context:\n{$this->supplier->ai_context}\n";
+        if ($this->brand->ai_context) {
+            $context .= "\nAdditional Brand Context:\n{$this->brand->ai_context}\n";
         }
 
         return $context;

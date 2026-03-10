@@ -15,7 +15,7 @@ class DocumentConversation extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'supplier_id',
+        'brand_id',
         'user_id',
         'status',
         'original_filename',
@@ -33,9 +33,9 @@ class DocumentConversation extends Model
         ];
     }
 
-    public function supplier(): BelongsTo
+    public function brand(): BelongsTo
     {
-        return $this->belongsTo(Supplier::class);
+        return $this->belongsTo(Brand::class);
     }
 
     public function user(): BelongsTo

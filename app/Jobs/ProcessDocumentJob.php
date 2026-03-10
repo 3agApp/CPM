@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Ai\Responses\StructuredAgentResponse;
 use OpenSpout\Common\Entity\Cell\FormulaCell;
 use OpenSpout\Reader\CSV\Reader as CsvReader;
 use OpenSpout\Reader\XLSX\Options as XlsxOptions;
@@ -32,18 +33,24 @@ class ProcessDocumentJob implements ShouldQueue
     {
         $this->conversation->update(['status' => ConversationStatus::Processing]);
 
-        $supplier = $this->conversation->supplier;
+        $brand = $this->conversation->brand;
 
         $documentData = $this->parseDocument();
 
         $prompt = $this->buildPrompt($documentData);
 
-        $agent = new DocumentProcessor($supplier);
+        $agent = new DocumentProcessor($brand);
 
         $response = $agent->prompt(
             $prompt,
             timeout: 600,
         );
+
+        if (! $response instanceof StructuredAgentResponse) {
+            throw new \RuntimeException('Document processor must return a structured response.');
+        }
+
+        $response = $response->toArray();
 
         if ($response['needs_clarification']) {
             $this->conversation->messages()->create([
@@ -121,7 +128,7 @@ class ProcessDocumentJob implements ShouldQueue
                     ->label('View')
                     ->url(DocumentConversationResource::getUrl('view', [
                         'record' => $this->conversation,
-                        'tenant' => $this->conversation->supplier->organization,
+                        'tenant' => $this->conversation->brand->organization,
                     ])),
             ]);
 

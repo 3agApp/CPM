@@ -6,9 +6,9 @@ use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Supplier>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Brand>
  */
-class SupplierFactory extends Factory
+class BrandFactory extends Factory
 {
     /**
      * @return array<string, mixed>

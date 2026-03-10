@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('document_conversations', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('supplier_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('brand_id')->constrained('brands')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('status')->default('pending');
             $table->string('original_filename');

@@ -13,7 +13,7 @@ beforeEach(function () {
 });
 
 it('marks every document processor response field as required', function () {
-    $processor = new DocumentProcessor($this->createMock(\App\Models\Supplier::class));
+    $processor = new DocumentProcessor($this->createMock(\App\Models\Brand::class));
 
     $schema = (new JsonSchemaTypeFactory)
         ->object($processor->schema(new JsonSchemaTypeFactory))

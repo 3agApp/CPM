@@ -22,8 +22,8 @@ class DocumentConversationsTable
                     ->sortable()
                     ->weight('medium')
                     ->limit(40),
-                TextColumn::make('supplier.name')
-                    ->label('Supplier')
+                TextColumn::make('brand.name')
+                    ->label('Brand')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('status')

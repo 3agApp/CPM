@@ -38,7 +38,7 @@ class DocumentConversationResource extends Resource
         $tenant = Filament::getTenant();
 
         return parent::getEloquentQuery()
-            ->whereHas('supplier', fn (Builder $query) => $query
+            ->whereHas('brand', fn (Builder $query) => $query
                 ->where('organization_id', $tenant?->getKey()));
     }
 

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\Suppliers\Schemas;
+namespace App\Filament\Resources\Brands\Schemas;
 
-use App\Models\Supplier;
+use App\Models\Brand;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -11,18 +11,18 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
-class SupplierForm
+class BrandForm
 {
     public static function configure(Schema $schema): Schema
     {
         return $schema
             ->components([
-                Section::make('Supplier information')
+                Section::make('Brand information')
                     ->columnSpanFull()
                     ->columns(2)
                     ->schema([
                         TextInput::make('name')
-                            ->label('Supplier name')
+                            ->label('Brand name')
                             ->required()
                             ->minLength(2)
                             ->maxLength(255)
@@ -30,8 +30,8 @@ class SupplierForm
                         Textarea::make('ai_context')
                             ->label('AI context')
                             ->rows(6)
-                            ->placeholder('Add supplier-specific context for AI-assisted workflows.')
-                            ->helperText('Used to give AI tools supplier-specific instructions or background.')
+                            ->placeholder('Add brand-specific context for AI-assisted workflows.')
+                            ->helperText('Used to give AI tools brand-specific instructions or background.')
                             ->columnSpanFull(),
                         TextInput::make('article_number_prefix')
                             ->label('Article number prefix')
@@ -57,7 +57,7 @@ class SupplierForm
                     ->columns(2)
                     ->schema([
                         TextInput::make('default_supplier_margin')
-                            ->label('Default supplier margin (%)')
+                            ->label('Default brand margin (%)')
                             ->numeric()
                             ->required()
                             ->default(25)
@@ -127,10 +127,10 @@ class SupplierForm
                     ->schema([
                         Placeholder::make('created_at_display')
                             ->label('Created at')
-                            ->content(fn (?Supplier $record): string => $record?->created_at?->toDayDateTimeString() ?? '—'),
+                            ->content(fn (?Brand $record): string => $record?->created_at?->toDayDateTimeString() ?? '—'),
                         Placeholder::make('updated_at_display')
                             ->label('Updated at')
-                            ->content(fn (?Supplier $record): string => $record?->updated_at?->toDayDateTimeString() ?? '—'),
+                            ->content(fn (?Brand $record): string => $record?->updated_at?->toDayDateTimeString() ?? '—'),
                     ]),
             ]);
     }

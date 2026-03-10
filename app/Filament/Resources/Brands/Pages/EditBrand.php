@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\Suppliers\Pages;
+namespace App\Filament\Resources\Brands\Pages;
 
-use App\Filament\Resources\Suppliers\SupplierResource;
+use App\Filament\Resources\Brands\BrandResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
-class EditSupplier extends EditRecord
+class EditBrand extends EditRecord
 {
-    protected static string $resource = SupplierResource::class;
+    protected static string $resource = BrandResource::class;
 
     protected function getHeaderActions(): array
     {

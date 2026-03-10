@@ -33,8 +33,8 @@ class ViewDocumentConversation extends ViewRecord
                             ->label('Filename'),
                         TextEntry::make('status')
                             ->badge(),
-                        TextEntry::make('supplier.name')
-                            ->label('Supplier'),
+                        TextEntry::make('brand.name')
+                            ->label('Brand'),
                         TextEntry::make('user.name')
                             ->label('Uploaded by'),
                         TextEntry::make('created_at')

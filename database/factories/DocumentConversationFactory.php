@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\ConversationStatus;
-use App\Models\Supplier;
+use App\Models\Brand;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -15,7 +15,7 @@ class DocumentConversationFactory extends Factory
     public function definition(): array
     {
         return [
-            'supplier_id' => Supplier::factory(),
+            'brand_id' => Brand::factory(),
             'user_id' => User::factory(),
             'status' => ConversationStatus::Pending,
             'original_filename' => fake()->word().'.csv',

@@ -7,37 +7,44 @@ use App\Filament\Resources\DocumentConversations\DocumentConversationResource;
 use App\Filament\Resources\DocumentConversations\Pages\ListDocumentConversations;
 use App\Filament\Resources\DocumentConversations\Pages\ViewDocumentConversation;
 use App\Jobs\ProcessDocumentJob;
+use App\Models\Brand;
 use App\Models\DocumentConversation;
 use App\Models\Organization;
-use App\Models\Supplier;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
-beforeEach(function () {
-    $this->organization = Organization::factory()->create();
-    $this->user = User::factory()->create();
-    $this->organization->members()->attach($this->user, ['role' => Role::Owner->value]);
-    $this->supplier = Supplier::factory()->create(['organization_id' => $this->organization->id]);
+use function Pest\Laravel\actingAs;
 
-    $this->actingAs($this->user);
+function documentConversationResourceContext(): array
+{
+    $organization = Organization::factory()->create();
+    $user = User::factory()->create();
+    $organization->members()->attach($user, ['role' => Role::Owner->value]);
+    $brand = Brand::factory()->create(['organization_id' => $organization->id]);
+
+    actingAs($user);
     Filament::setCurrentPanel(Filament::getPanel('dashboard'));
-    Filament::setTenant($this->organization);
-});
+    Filament::setTenant($organization);
+
+    return [$organization, $user, $brand];
+}
 
 it('can list document conversations for the current tenant', function () {
+    [$organization, $user, $brand] = documentConversationResourceContext();
+
     $conversation = DocumentConversation::factory()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
     ]);
 
     $otherOrg = Organization::factory()->create();
-    $otherSupplier = Supplier::factory()->create(['organization_id' => $otherOrg->id]);
+    $otherBrand = Brand::factory()->create(['organization_id' => $otherOrg->id]);
     DocumentConversation::factory()->create([
-        'supplier_id' => $otherSupplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $otherBrand->id,
+        'user_id' => $user->id,
     ]);
 
     Livewire::test(ListDocumentConversations::class)
@@ -46,9 +53,11 @@ it('can list document conversations for the current tenant', function () {
 });
 
 it('can view a document conversation', function () {
+    [, $user, $brand] = documentConversationResourceContext();
+
     $conversation = DocumentConversation::factory()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
         'original_filename' => 'products.csv',
     ]);
 
@@ -57,16 +66,18 @@ it('can view a document conversation', function () {
 });
 
 it('lets another member of the same organization see a shared conversation in the list', function () {
+    [$organization, $user, $brand] = documentConversationResourceContext();
+
     $ownerConversation = DocumentConversation::factory()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
     ]);
 
     $teammate = User::factory()->create();
-    $this->organization->members()->attach($teammate, ['role' => Role::Member->value]);
+    $organization->members()->attach($teammate, ['role' => Role::Member->value]);
 
-    $this->actingAs($teammate);
-    Filament::setTenant($this->organization);
+    actingAs($teammate);
+    Filament::setTenant($organization);
 
     Livewire::test(ListDocumentConversations::class)
         ->assertCanSeeTableRecords([$ownerConversation])
@@ -74,32 +85,36 @@ it('lets another member of the same organization see a shared conversation in th
 });
 
 it('lets another member of the same organization view a shared conversation', function () {
+    [$organization, $user, $brand] = documentConversationResourceContext();
+
     $ownerConversation = DocumentConversation::factory()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
     ]);
 
     $teammate = User::factory()->create();
-    $this->organization->members()->attach($teammate, ['role' => Role::Member->value]);
+    $organization->members()->attach($teammate, ['role' => Role::Member->value]);
 
-    $this->actingAs($teammate);
-    Filament::setTenant($this->organization);
+    actingAs($teammate);
+    Filament::setTenant($organization);
 
     Livewire::test(ViewDocumentConversation::class, ['record' => $ownerConversation->id])
         ->assertSuccessful();
 });
 
 it('does not let a member of another organization access the conversation view', function () {
+    [, $user, $brand] = documentConversationResourceContext();
+
     $conversation = DocumentConversation::factory()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
     ]);
 
     $otherOrganization = Organization::factory()->create();
     $otherUser = User::factory()->create();
     $otherOrganization->members()->attach($otherUser, ['role' => Role::Member->value]);
 
-    $this->actingAs($otherUser);
+    actingAs($otherUser);
     Filament::setTenant($otherOrganization);
 
     $response = $this->get(DocumentConversationResource::getUrl('view', ['record' => $conversation]));
@@ -108,9 +123,11 @@ it('does not let a member of another organization access the conversation view',
 });
 
 it('renders conversation messages as safe markdown', function () {
+    [, $user, $brand] = documentConversationResourceContext();
+
     $conversation = DocumentConversation::factory()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
     ]);
 
     $conversation->messages()->create([
@@ -121,17 +138,19 @@ it('renders conversation messages as safe markdown', function () {
     Livewire::test(ViewDocumentConversation::class, ['record' => $conversation->id])
         ->assertSuccessful()
         ->assertSee('message-markdown')
-        ->assertSeeHtml('<h1>Summary</h1>', false)
-        ->assertSeeHtml('<strong>Bold detail</strong>', false)
-        ->assertSeeHtml('<pre><code>', false)
-        ->assertSeeHtml('<table>', false)
+        ->assertSeeHtml('<h1>Summary</h1>')
+        ->assertSeeHtml('<strong>Bold detail</strong>')
+        ->assertSeeHtml('<pre><code>')
+        ->assertSeeHtml('<table>')
         ->assertDontSee('<script>', false);
 });
 
 it('shows error message for failed conversations', function () {
+    [, $user, $brand] = documentConversationResourceContext();
+
     $conversation = DocumentConversation::factory()->failed()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
         'error_message' => 'Processing failed due to invalid format',
     ]);
 
@@ -141,26 +160,30 @@ it('shows error message for failed conversations', function () {
 });
 
 it('displays status badge with correct color', function () {
+    [, $user, $brand] = documentConversationResourceContext();
+
     DocumentConversation::factory()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
         'status' => ConversationStatus::Completed,
     ]);
 
     Livewire::test(ListDocumentConversations::class)
         ->assertCanSeeTableRecords(
-            DocumentConversation::where('supplier_id', $this->supplier->id)->get()
+            DocumentConversation::where('brand_id', $brand->id)->get()
         );
 });
 
 it('can upload a document with notes from the list page', function () {
+    [, $user, $brand] = documentConversationResourceContext();
+
     Queue::fake();
 
     $file = UploadedFile::fake()->create('products.csv', 100, 'text/csv');
 
     Livewire::test(ListDocumentConversations::class)
         ->callAction('upload', [
-            'supplier_id' => $this->supplier->id,
+            'brand_id' => $brand->id,
             'document' => $file,
             'notes' => 'VAT rate is 8.1%',
         ])
@@ -169,8 +192,8 @@ it('can upload a document with notes from the list page', function () {
     expect(DocumentConversation::count())->toBe(1);
 
     $conversation = DocumentConversation::first();
-    expect($conversation->supplier_id)->toBe($this->supplier->id)
-        ->and($conversation->user_id)->toBe($this->user->id)
+    expect($conversation->brand_id)->toBe($brand->id)
+        ->and($conversation->user_id)->toBe($user->id)
         ->and($conversation->status)->toBe(ConversationStatus::Pending)
         ->and($conversation->stored_path)->not->toBeNull();
 
@@ -182,13 +205,15 @@ it('can upload a document with notes from the list page', function () {
 });
 
 it('can upload a document without notes', function () {
+    [, , $brand] = documentConversationResourceContext();
+
     Queue::fake();
 
     $file = UploadedFile::fake()->create('products.csv', 100, 'text/csv');
 
     Livewire::test(ListDocumentConversations::class)
         ->callAction('upload', [
-            'supplier_id' => $this->supplier->id,
+            'brand_id' => $brand->id,
             'document' => $file,
         ])
         ->assertNotified('Document uploaded');
@@ -200,11 +225,13 @@ it('can upload a document without notes', function () {
 });
 
 it('can send a message to request changes on completed conversation', function () {
+    [, $user, $brand] = documentConversationResourceContext();
+
     Queue::fake();
 
     $conversation = DocumentConversation::factory()->completed()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
     ]);
 
     Livewire::test(ViewDocumentConversation::class, ['record' => $conversation->id])
@@ -224,11 +251,13 @@ it('can send a message to request changes on completed conversation', function (
 });
 
 it('can reply to ai question when conversation needs context', function () {
+    [, $user, $brand] = documentConversationResourceContext();
+
     Queue::fake();
 
     $conversation = DocumentConversation::factory()->needsContext()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
         'ai_question' => 'What is the VAT rate?',
     ]);
 
@@ -246,9 +275,11 @@ it('can reply to ai question when conversation needs context', function () {
 });
 
 it('sends database notification when processing completes', function () {
+    [, $user, $brand] = documentConversationResourceContext();
+
     $conversation = DocumentConversation::factory()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
         'original_filename' => 'test.csv',
     ]);
 
@@ -256,15 +287,17 @@ it('sends database notification when processing completes', function () {
         ->success()
         ->title('Document processed successfully');
 
-    $notification->sendToDatabase($this->user);
+    $notification->sendToDatabase($user);
 
-    expect($this->user->notifications)->toHaveCount(1);
+    expect($user->notifications)->toHaveCount(1);
 });
 
 it('sends database notification when processing fails', function () {
+    [, $user, $brand] = documentConversationResourceContext();
+
     $conversation = DocumentConversation::factory()->create([
-        'supplier_id' => $this->supplier->id,
-        'user_id' => $this->user->id,
+        'brand_id' => $brand->id,
+        'user_id' => $user->id,
         'original_filename' => 'test.csv',
     ]);
 
@@ -272,7 +305,7 @@ it('sends database notification when processing fails', function () {
         ->danger()
         ->title('Document processing failed');
 
-    $notification->sendToDatabase($this->user);
+    $notification->sendToDatabase($user);
 
-    expect($this->user->notifications)->toHaveCount(1);
+    expect($user->notifications)->toHaveCount(1);
 });

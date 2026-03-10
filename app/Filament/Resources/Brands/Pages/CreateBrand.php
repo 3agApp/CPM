@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Filament\Resources\Suppliers\Pages;
+namespace App\Filament\Resources\Brands\Pages;
 
-use App\Filament\Resources\Suppliers\SupplierResource;
+use App\Filament\Resources\Brands\BrandResource;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
 
-class CreateSupplier extends CreateRecord
+class CreateBrand extends CreateRecord
 {
-    protected static string $resource = SupplierResource::class;
+    protected static string $resource = BrandResource::class;
 
     protected static bool $canCreateAnother = false;
 
@@ -24,7 +24,7 @@ class CreateSupplier extends CreateRecord
     protected function getCreateFormAction(): Action
     {
         return parent::getCreateFormAction()
-            ->label('Create Supplier');
+            ->label('Create Brand');
     }
 
     protected function getCancelFormAction(): Action

@@ -30,9 +30,9 @@ class Organization extends Model implements HasCurrentTenantLabel
         return $this->hasMany(Invitation::class);
     }
 
-    public function suppliers(): HasMany
+    public function brands(): HasMany
     {
-        return $this->hasMany(Supplier::class);
+        return $this->hasMany(Brand::class);
     }
 
     public function getCurrentTenantLabel(): string

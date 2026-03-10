@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Suppliers\Tables;
+namespace App\Filament\Resources\Brands\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -10,14 +10,14 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class SuppliersTable
+class BrandsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->label('Supplier name')
+                    ->label('Brand name')
                     ->searchable()
                     ->sortable()
                     ->weight('medium'),
@@ -33,7 +33,7 @@ class SuppliersTable
                     ->label('Currency')
                     ->badge(),
                 TextColumn::make('default_supplier_margin')
-                    ->label('Supplier margin')
+                    ->label('Brand margin')
                     ->numeric(decimalPlaces: 2)
                     ->suffix('%')
                     ->sortable(),
@@ -50,8 +50,8 @@ class SuppliersTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
-            ->emptyStateHeading('No suppliers found')
-            ->emptyStateDescription('Create your first supplier to store default pricing and product settings.')
+            ->emptyStateHeading('No brands found')
+            ->emptyStateDescription('Create your first brand to store default pricing and product settings.')
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),

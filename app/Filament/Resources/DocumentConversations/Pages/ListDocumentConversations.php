@@ -6,8 +6,8 @@ use App\Enums\ConversationStatus;
 use App\Enums\MessageRole;
 use App\Filament\Resources\DocumentConversations\DocumentConversationResource;
 use App\Jobs\ProcessDocumentJob;
+use App\Models\Brand;
 use App\Models\DocumentConversation;
-use App\Models\Supplier;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\FileUpload;
@@ -28,9 +28,9 @@ class ListDocumentConversations extends ListRecords
                 ->label('Upload Document')
                 ->icon('heroicon-o-arrow-up-tray')
                 ->form([
-                    Select::make('supplier_id')
-                        ->label('Supplier')
-                        ->options(fn () => Supplier::query()
+                    Select::make('brand_id')
+                        ->label('Brand')
+                        ->options(fn () => Brand::query()
                             ->where('organization_id', Filament::getTenant()->id)
                             ->pluck('name', 'id'))
                         ->required()
@@ -58,7 +58,7 @@ class ListDocumentConversations extends ListRecords
                     $storedPath = $file->store('documents', 'local');
 
                     $conversation = DocumentConversation::create([
-                        'supplier_id' => $data['supplier_id'],
+                        'brand_id' => $data['brand_id'],
                         'user_id' => auth()->id(),
                         'status' => ConversationStatus::Pending,
                         'original_filename' => $file->getClientOriginalName(),

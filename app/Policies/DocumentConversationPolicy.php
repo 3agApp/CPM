@@ -18,7 +18,7 @@ class DocumentConversationPolicy
 
     public function view(User $user, DocumentConversation $documentConversation): bool
     {
-        return $user->canAccessTenant($documentConversation->supplier->organization);
+        return $user->canAccessTenant($documentConversation->brand->organization);
     }
 
     public function create(User $user): bool
@@ -28,12 +28,12 @@ class DocumentConversationPolicy
 
     public function update(User $user, DocumentConversation $documentConversation): bool
     {
-        return $user->canAccessTenant($documentConversation->supplier->organization);
+        return $user->canAccessTenant($documentConversation->brand->organization);
     }
 
     public function delete(User $user, DocumentConversation $documentConversation): bool
     {
-        $role = $user->getRoleForOrganization($documentConversation->supplier->organization);
+        $role = $user->getRoleForOrganization($documentConversation->brand->organization);
 
         return $role?->canManageOrganization() ?? false;
     }
