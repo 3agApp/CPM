@@ -3,11 +3,9 @@
 namespace App\Filament\Resources\DocumentConversations\Tables;
 
 use App\Enums\ConversationStatus;
-use App\Models\DocumentConversation;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -17,9 +15,6 @@ class DocumentConversationsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->query(fn () => DocumentConversation::query()
-                ->whereHas('supplier', fn ($query) => $query
-                    ->where('organization_id', Filament::getTenant()->id)))
             ->columns([
                 TextColumn::make('original_filename')
                     ->label('Filename')

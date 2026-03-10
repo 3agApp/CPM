@@ -7,8 +7,10 @@ use App\Filament\Resources\DocumentConversations\Pages\ViewDocumentConversation;
 use App\Filament\Resources\DocumentConversations\Tables\DocumentConversationsTable;
 use App\Models\DocumentConversation;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class DocumentConversationResource extends Resource
 {
@@ -29,6 +31,15 @@ class DocumentConversationResource extends Resource
     public static function table(Table $table): Table
     {
         return DocumentConversationsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $tenant = Filament::getTenant();
+
+        return parent::getEloquentQuery()
+            ->whereHas('supplier', fn (Builder $query) => $query
+                ->where('organization_id', $tenant?->getKey()));
     }
 
     public static function canCreate(): bool

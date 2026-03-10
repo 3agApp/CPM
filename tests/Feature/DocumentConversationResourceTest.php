@@ -3,6 +3,7 @@
 use App\Enums\ConversationStatus;
 use App\Enums\MessageRole;
 use App\Enums\Role;
+use App\Filament\Resources\DocumentConversations\DocumentConversationResource;
 use App\Filament\Resources\DocumentConversations\Pages\ListDocumentConversations;
 use App\Filament\Resources\DocumentConversations\Pages\ViewDocumentConversation;
 use App\Jobs\ProcessDocumentJob;
@@ -53,6 +54,57 @@ it('can view a document conversation', function () {
 
     Livewire::test(ViewDocumentConversation::class, ['record' => $conversation->id])
         ->assertSuccessful();
+});
+
+it('lets another member of the same organization see a shared conversation in the list', function () {
+    $ownerConversation = DocumentConversation::factory()->create([
+        'supplier_id' => $this->supplier->id,
+        'user_id' => $this->user->id,
+    ]);
+
+    $teammate = User::factory()->create();
+    $this->organization->members()->attach($teammate, ['role' => Role::Member->value]);
+
+    $this->actingAs($teammate);
+    Filament::setTenant($this->organization);
+
+    Livewire::test(ListDocumentConversations::class)
+        ->assertCanSeeTableRecords([$ownerConversation])
+        ->assertCountTableRecords(1);
+});
+
+it('lets another member of the same organization view a shared conversation', function () {
+    $ownerConversation = DocumentConversation::factory()->create([
+        'supplier_id' => $this->supplier->id,
+        'user_id' => $this->user->id,
+    ]);
+
+    $teammate = User::factory()->create();
+    $this->organization->members()->attach($teammate, ['role' => Role::Member->value]);
+
+    $this->actingAs($teammate);
+    Filament::setTenant($this->organization);
+
+    Livewire::test(ViewDocumentConversation::class, ['record' => $ownerConversation->id])
+        ->assertSuccessful();
+});
+
+it('does not let a member of another organization access the conversation view', function () {
+    $conversation = DocumentConversation::factory()->create([
+        'supplier_id' => $this->supplier->id,
+        'user_id' => $this->user->id,
+    ]);
+
+    $otherOrganization = Organization::factory()->create();
+    $otherUser = User::factory()->create();
+    $otherOrganization->members()->attach($otherUser, ['role' => Role::Member->value]);
+
+    $this->actingAs($otherUser);
+    Filament::setTenant($otherOrganization);
+
+    $response = $this->get(DocumentConversationResource::getUrl('view', ['record' => $conversation]));
+
+    $response->assertNotFound();
 });
 
 it('renders conversation messages as safe markdown', function () {
