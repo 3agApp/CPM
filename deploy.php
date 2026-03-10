@@ -32,7 +32,7 @@ set('writable_dirs', [
     'bootstrap/cache',
 ]);
 
-set('writable_mode', 'chmod');
+set('writable_mode', 'acl');
 
 /*
 |--------------------------------------------------------------------------

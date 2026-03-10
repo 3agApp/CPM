@@ -23,6 +23,7 @@ it('includes the deployer scaffold for production deployments', function () {
         ->toContain("getenv('DEPLOY_HOSTNAME')")
         ->toContain("getenv('DEPLOY_HTTP_USER')")
         ->toContain("getenv('DEPLOY_REMOTE_USER')")
+        ->toContain("set('writable_mode', 'acl');")
         ->toContain("task('build:assets'")
         ->toContain("task('deploy:ensure_metadata_dir'")
         ->toContain("task('upload:assets'")
