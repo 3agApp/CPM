@@ -46,6 +46,21 @@ it('implements HasCurrentTenantLabel', function () {
     expect($organization->getCurrentTenantLabel())->toBe('Active Organization');
 });
 
+it('renders the organization profile form in a sectioned layout', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->create();
+
+    $organization->members()->attach($user, ['role' => Role::Owner->value]);
+
+    $this->actingAs($user);
+    Filament::setCurrentPanel(Filament::getPanel('dashboard'));
+    Filament::setTenant($organization);
+
+    Livewire::test(EditOrganizationProfile::class)
+        ->assertSee('Organization details')
+        ->assertSee('Update how your organization appears across the workspace and in tenant URLs.');
+});
+
 it('enforces unique slug', function () {
     Organization::factory()->create(['slug' => 'test-org']);
 
