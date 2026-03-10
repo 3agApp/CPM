@@ -40,4 +40,9 @@ class EditOrganizationProfile extends EditTenantProfile
                     ->rules(['alpha_dash:ascii']),
             ]);
     }
+
+    protected function getRedirectUrl(): ?string
+    {
+        return static::getUrl(tenant: $this->tenant);
+    }
 }
