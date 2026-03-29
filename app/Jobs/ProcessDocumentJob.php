@@ -12,9 +12,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Ai\Files\Document;
 use Laravel\Ai\Responses\StructuredAgentResponse;
 use OpenSpout\Common\Entity\Cell\FormulaCell;
-use OpenSpout\Reader\CSV\Reader as CsvReader;
 use OpenSpout\Reader\XLSX\Options as XlsxOptions;
 use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 use Throwable;
@@ -35,14 +35,17 @@ class ProcessDocumentJob implements ShouldQueue
 
         $brand = $this->conversation->brand;
 
-        $documentData = $this->parseDocument();
+        $documentPath = $this->getDocumentPath();
 
-        $prompt = $this->buildPrompt($documentData);
+        $prompt = $this->buildPrompt();
 
         $agent = new DocumentProcessor($brand);
 
         $response = $agent->prompt(
             $prompt,
+            attachments: [
+                Document::fromPath($documentPath),
+            ],
             timeout: 600,
         );
 
@@ -135,19 +138,28 @@ class ProcessDocumentJob implements ShouldQueue
         $notification->sendToDatabase($user);
     }
 
-    private function parseDocument(): string
+    private function getDocumentPath(): string
     {
-        $filePath = Storage::path($this->conversation->stored_path);
         $extension = strtolower(pathinfo($this->conversation->original_filename, PATHINFO_EXTENSION));
 
-        $reader = match ($extension) {
-            'xlsx', 'xls' => $this->createXlsxReader(),
-            default => new CsvReader,
-        };
+        if (in_array($extension, ['xlsx', 'xls'])) {
+            return $this->convertToCsv();
+        }
 
+        return Storage::path($this->conversation->stored_path);
+    }
+
+    private function convertToCsv(): string
+    {
+        $filePath = Storage::path($this->conversation->stored_path);
+
+        Storage::makeDirectory('temp');
+        $csvPath = Storage::path('temp/'.$this->conversation->id.'.csv');
+
+        $reader = $this->createXlsxReader();
         $reader->open($filePath);
 
-        $rows = [];
+        $handle = fopen($csvPath, 'w');
 
         foreach ($reader->getSheetIterator() as $sheet) {
             foreach ($sheet->getRowIterator() as $row) {
@@ -161,20 +173,20 @@ class ProcessDocumentJob implements ShouldQueue
                     return (string) $cell->getValue();
                 }, $row->getCells());
 
-                // Skip completely empty rows
                 if (array_filter($cells, fn ($v) => $v !== '') === []) {
                     continue;
                 }
 
-                $rows[] = $cells;
+                fputcsv($handle, $cells);
             }
 
             break; // Only process the first sheet
         }
 
+        fclose($handle);
         $reader->close();
 
-        return json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return $csvPath;
     }
 
     private function createXlsxReader(): XlsxReader
@@ -186,9 +198,9 @@ class ProcessDocumentJob implements ShouldQueue
         return new XlsxReader($options);
     }
 
-    private function buildPrompt(string $documentData): string
+    private function buildPrompt(): string
     {
-        $prompt = "Process the following product data and transform it into the standardized output CSV format.\n";
+        $prompt = "Process the attached product data file and transform it into the standardized output CSV format.\n";
         $prompt .= "The source file is: {$this->conversation->original_filename}\n";
 
         $messages = $this->conversation->messages()->orderBy('created_at')->get();
@@ -203,7 +215,7 @@ class ProcessDocumentJob implements ShouldQueue
             }
         }
 
-        $prompt .= "\n## Source Document Data (JSON)\nThe data is a 2D array where each inner array is a row from the spreadsheet. The first non-empty row is typically the header row, but you must determine the actual structure by examining the content. Some files may have metadata rows before the actual data table.\n```json\n{$documentData}\n```\n";
+        $prompt .= "\nThe source document is attached as a CSV file. The first non-empty row is typically the header row, but you must determine the actual structure by examining the content. Some files may have metadata rows before the actual data table.\n";
 
         return $prompt;
     }

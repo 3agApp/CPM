@@ -7,6 +7,7 @@ use App\Jobs\ProcessDocumentJob;
 use App\Models\DocumentConversation;
 use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Ai\Files\Document;
 
 beforeEach(function () {
     Storage::fake();
@@ -140,7 +141,8 @@ it('includes message history in the prompt', function () {
         return str_contains($prompt->prompt, 'The VAT rate is 8.1%')
             && str_contains($prompt->prompt, 'What is the default product group?')
             && str_contains($prompt->prompt, 'Use WG1=Electronics, WG2=Cables')
-            && str_contains($prompt->prompt, 'Conversation History');
+            && str_contains($prompt->prompt, 'Conversation History')
+            && $prompt->attachments->count() === 1;
     });
 });
 
@@ -191,7 +193,7 @@ it('sets status to processing during execution', function () {
     (new ProcessDocumentJob($conversation))->handle();
 });
 
-it('skips empty rows and preserves all columns', function () {
+it('sends the document file as an attachment instead of inline data', function () {
     Storage::put('documents/test.csv', "name,price,note\nWidget,9.99,good\n,,");
 
     $conversation = DocumentConversation::factory()->create([
@@ -210,9 +212,7 @@ it('skips empty rows and preserves all columns', function () {
     (new ProcessDocumentJob($conversation))->handle();
 
     DocumentProcessor::assertPrompted(function ($prompt) {
-        // Should contain header row + 1 data row (empty row skipped)
-        // Data is a 2D array, so all columns are preserved
-        return str_contains($prompt->prompt, '["name","price","note"]')
-            && str_contains($prompt->prompt, '["Widget","9.99","good"]');
+        return $prompt->attachments->count() === 1
+            && ! str_contains($prompt->prompt, '["name","price","note"]');
     });
 });
