@@ -7,7 +7,6 @@ use App\Jobs\ProcessDocumentJob;
 use App\Models\DocumentConversation;
 use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Illuminate\Support\Facades\Storage;
-use Laravel\Ai\Files\Document;
 
 beforeEach(function () {
     Storage::fake();
@@ -24,13 +23,13 @@ it('marks every document processor response field as required', function () {
         ->toBe([
             'needs_clarification',
             'question',
-            'csv_output',
+            'products',
         ])
         ->and($schema['properties']['question']['type'])->toBe('string')
-        ->and($schema['properties']['csv_output']['type'])->toBe('string');
+        ->and($schema['properties']['products']['type'])->toBe('array');
 });
 
-it('processes document and completes when ai returns csv output', function () {
+it('processes document and saves products to database', function () {
     Storage::put('documents/test.csv', "name,price\nWidget,9.99");
 
     $conversation = DocumentConversation::factory()->create([
@@ -41,8 +40,10 @@ it('processes document and completes when ai returns csv output', function () {
     DocumentProcessor::fake(function () {
         return [
             'needs_clarification' => false,
-            'question' => null,
-            'csv_output' => 'Artnr,Wg1,Wg2',
+            'question' => '',
+            'products' => [
+                ['artnr' => 'WID001', 'bez1' => 'Widget', 'vk1' => 9.99, 'ek' => 5.00],
+            ],
         ];
     });
 
@@ -50,9 +51,9 @@ it('processes document and completes when ai returns csv output', function () {
 
     $conversation->refresh();
     expect($conversation->status)->toBe(ConversationStatus::Completed)
-        ->and($conversation->output_path)->not->toBeNull();
-
-    Storage::assertExists($conversation->output_path);
+        ->and($conversation->products)->toHaveCount(1)
+        ->and($conversation->products->first()->artnr)->toBe('WID001')
+        ->and($conversation->products->first()->bez1)->toBe('Widget');
 });
 
 it('stores completion message when processing succeeds', function () {
@@ -66,8 +67,10 @@ it('stores completion message when processing succeeds', function () {
     DocumentProcessor::fake(function () {
         return [
             'needs_clarification' => false,
-            'question' => null,
-            'csv_output' => 'Artnr,Wg1,Wg2',
+            'question' => '',
+            'products' => [
+                ['artnr' => 'WID001', 'bez1' => 'Widget'],
+            ],
         ];
     });
 
@@ -90,7 +93,7 @@ it('sets status to needs_context when ai asks a question', function () {
         return [
             'needs_clarification' => true,
             'question' => 'What VAT rate should I use?',
-            'csv_output' => null,
+            'products' => [],
         ];
     });
 
@@ -130,8 +133,10 @@ it('includes message history in the prompt', function () {
     DocumentProcessor::fake(function () {
         return [
             'needs_clarification' => false,
-            'question' => null,
-            'csv_output' => 'Artnr,Wg1,Wg2',
+            'question' => '',
+            'products' => [
+                ['artnr' => 'WID001', 'bez1' => 'Widget'],
+            ],
         ];
     });
 
@@ -185,8 +190,10 @@ it('sets status to processing during execution', function () {
 
         return [
             'needs_clarification' => false,
-            'question' => null,
-            'csv_output' => 'Artnr,Wg1,Wg2',
+            'question' => '',
+            'products' => [
+                ['artnr' => 'WID001', 'bez1' => 'Widget'],
+            ],
         ];
     });
 
@@ -204,8 +211,10 @@ it('sends the document file as an attachment instead of inline data', function (
     DocumentProcessor::fake(function () {
         return [
             'needs_clarification' => false,
-            'question' => null,
-            'csv_output' => 'Artnr,Wg1,Wg2',
+            'question' => '',
+            'products' => [
+                ['artnr' => 'WID001', 'bez1' => 'Widget'],
+            ],
         ];
     });
 

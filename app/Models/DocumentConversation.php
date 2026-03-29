@@ -48,6 +48,11 @@ class DocumentConversation extends Model
         return $this->hasMany(ConversationMessage::class)->orderBy('created_at');
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
     public function isPending(): bool
     {
         return $this->status === ConversationStatus::Pending;

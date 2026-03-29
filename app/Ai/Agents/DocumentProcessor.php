@@ -30,10 +30,10 @@ class DocumentProcessor implements Agent, HasStructuredOutput
 
         return <<<INSTRUCTIONS
         You are a product data processor for a catalog/product management system.
-        Your task is to process uploaded product data (provided as a JSON 2D array) and transform it into a standardized output CSV format.
+        Your task is to process uploaded product data and transform it into a standardized structured format.
 
         ## Understanding the Source Data
-        The source data is a JSON array of arrays (rows of cells) extracted from a spreadsheet.
+        The source data is extracted from a spreadsheet file attached to this prompt.
         You must analyze the structure to identify:
         - Which row contains the column headers (it may not be the first row — skip metadata, titles, or blank rows)
         - Which columns map to which output fields (use header names and cell values to infer)
@@ -42,9 +42,9 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         ## Brand Context
         {$brandContext}
 
-        ## Output CSV Format
-        The output must contain these columns in this exact order:
-        Artnr, Wg1, Wg2, Bez1, Bestellnr, Vk1, Vk2, Vk3, Ek, Mwst, Artean, Langtext, Aktiv, Kurztext, HerstellerId, Webshop, Ws_aktiv, Ws_dateavailable, Gewnetto, Gewbrutto, Uspland, Zolltarifnr, Verkaufsmenge, Verkaufsmenge_staffel, Wbztage, Ws_abverkauf, Zolltarifnr_ch, Zolltarifnr_bez, Ursprungsland, Gtin2
+        ## Output Format
+        Return an array of product objects with these fields:
+        artnr, wg1, wg2, bez1, bestellnr, vk1, vk2, vk3, ek, mwst, artean, langtext, aktiv, kurztext, hersteller_id, webshop, ws_aktiv, ws_dateavailable, gewnetto, gewbrutto, uspland, zolltarifnr, verkaufsmenge, verkaufsmenge_staffel, wbztage, ws_abverkauf, zolltarifnr_ch, zolltarifnr_bez, ursprungsland, gtin2
 
         ## Column Definitions
         - Artnr: Article number (use brand prefix if applicable)
@@ -59,11 +59,11 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         - Mwst: VAT rate (e.g., 8.1)
         - Artean: EAN/barcode number
         - Langtext: Long description (HTML allowed)
-        - Aktiv: Active flag (TRUE/FALSE)
+        - Aktiv: Active flag (true/false)
         - Kurztext: Short text description
         - HerstellerId: Manufacturer ID (use brand default if not in source)
-        - Webshop: Webshop flag (TRUE/FALSE)
-        - Ws_aktiv: Webshop active flag (TRUE/FALSE)
+        - Webshop: Webshop flag (true/false)
+        - Ws_aktiv: Webshop active flag (true/false)
         - Ws_dateavailable: Date available for webshop (DD.MM.YYYY)
         - Gewnetto: Net weight in grams
         - Gewbrutto: Gross weight in grams
@@ -72,7 +72,7 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         - Verkaufsmenge: Sales quantity
         - Verkaufsmenge_staffel: Sales quantity tier
         - Wbztage: Delivery days
-        - Ws_abverkauf: Clearance sale flag (TRUE/FALSE)
+        - Ws_abverkauf: Clearance sale flag (true/false)
         - Zolltarifnr_ch: Swiss customs tariff number
         - Zolltarifnr_bez: Customs tariff description
         - Ursprungsland: Country of origin
@@ -87,8 +87,8 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         1. Map source columns to the output format using context and column name matching.
         2. Use brand defaults for missing fields when applicable.
         3. Set "needs_clarification" to true ONLY if critical data is missing and cannot be inferred.
-        4. If you need clarification, provide a clear question in "question" and set "csv_output" to an empty string.
-        5. If you do NOT need clarification, set "question" to an empty string and provide the full CSV in "csv_output".
+        4. If you need clarification, provide a clear question in "question" and set "products" to an empty array.
+        5. If you do NOT need clarification, set "question" to an empty string and provide all products in the "products" array.
         6. Process ALL rows from the source document.
         7. Preserve HTML in long text fields.
         INSTRUCTIONS;
@@ -99,7 +99,40 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         return [
             'needs_clarification' => $schema->boolean()->required(),
             'question' => $schema->string()->required(),
-            'csv_output' => $schema->string()->required(),
+            'products' => $schema->array(
+                $schema->object([
+                    'artnr' => $schema->string(),
+                    'wg1' => $schema->string(),
+                    'wg2' => $schema->string(),
+                    'bez1' => $schema->string(),
+                    'bestellnr' => $schema->string(),
+                    'vk1' => $schema->number(),
+                    'vk2' => $schema->number(),
+                    'vk3' => $schema->number(),
+                    'ek' => $schema->number(),
+                    'mwst' => $schema->number(),
+                    'artean' => $schema->string(),
+                    'langtext' => $schema->string(),
+                    'aktiv' => $schema->boolean(),
+                    'kurztext' => $schema->string(),
+                    'hersteller_id' => $schema->string(),
+                    'webshop' => $schema->boolean(),
+                    'ws_aktiv' => $schema->boolean(),
+                    'ws_dateavailable' => $schema->string(),
+                    'gewnetto' => $schema->number(),
+                    'gewbrutto' => $schema->number(),
+                    'uspland' => $schema->string(),
+                    'zolltarifnr' => $schema->string(),
+                    'verkaufsmenge' => $schema->integer(),
+                    'verkaufsmenge_staffel' => $schema->integer(),
+                    'wbztage' => $schema->integer(),
+                    'ws_abverkauf' => $schema->boolean(),
+                    'zolltarifnr_ch' => $schema->string(),
+                    'zolltarifnr_bez' => $schema->string(),
+                    'ursprungsland' => $schema->string(),
+                    'gtin2' => $schema->string(),
+                ])
+            )->required(),
         ];
     }
 

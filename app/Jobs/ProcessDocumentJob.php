@@ -75,22 +75,24 @@ class ProcessDocumentJob implements ShouldQueue
             return;
         }
 
-        $outputPath = 'outputs/'.$this->conversation->id.'.csv';
-        Storage::put($outputPath, $response['csv_output']);
+        $this->conversation->products()->delete();
+
+        foreach ($response['products'] as $product) {
+            $this->conversation->products()->create($product);
+        }
 
         $this->conversation->messages()->create([
             'role' => MessageRole::Assistant,
-            'content' => 'Processing completed. The output CSV has been generated.',
+            'content' => 'Processing completed. '.count($response['products']).' products have been saved.',
         ]);
 
         $this->conversation->update([
             'status' => ConversationStatus::Completed,
-            'output_path' => $outputPath,
         ]);
 
         $this->notifyUser(
             'Document processed successfully',
-            "The file \"{$this->conversation->original_filename}\" has been processed and is ready for download.",
+            "The file \"{$this->conversation->original_filename}\" has been processed. ".count($response['products']).' products saved.',
             'success',
         );
     }
