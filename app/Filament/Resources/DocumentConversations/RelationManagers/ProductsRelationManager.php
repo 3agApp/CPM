@@ -42,11 +42,11 @@ class ProductsRelationManager extends RelationManager
                         TextInput::make('artean')
                             ->label('EAN')
                             ->maxLength(255),
-                        TextInput::make('gtin2')
-                            ->label('GTIN 2')
-                            ->maxLength(255),
                         TextInput::make('hersteller_id')
                             ->label('Manufacturer ID')
+                            ->maxLength(255),
+                        TextInput::make('brand_name')
+                            ->label('Brand')
                             ->maxLength(255),
                     ]),
                 Section::make('Description')
@@ -75,27 +75,73 @@ class ProductsRelationManager extends RelationManager
                             ->label('Product Group 2')
                             ->maxLength(255),
                     ]),
-                Section::make('Pricing')
+                Section::make('Source Pricing (EUR)')
                     ->columns(2)
                     ->schema([
-                        TextInput::make('vk1')
-                            ->label('Selling Price 1')
-                            ->numeric(),
-                        TextInput::make('vk2')
-                            ->label('Selling Price 2')
-                            ->numeric(),
-                        TextInput::make('vk3')
-                            ->label('Selling Price 3')
-                            ->numeric(),
+                        TextInput::make('ek_eur')
+                            ->label('Purchase Price (EUR)')
+                            ->numeric()
+                            ->prefix('€'),
+                        TextInput::make('uvp_eur')
+                            ->label('EU RRP (EUR)')
+                            ->numeric()
+                            ->prefix('€'),
+                    ]),
+                Section::make('Calculated Pricing (CHF)')
+                    ->columns(3)
+                    ->schema([
                         TextInput::make('ek')
-                            ->label('Purchase Price')
-                            ->numeric(),
+                            ->label('Purchase Price (CHF)')
+                            ->numeric()
+                            ->prefix('CHF'),
+                        TextInput::make('vk1')
+                            ->label('VK1 – B2B Retailer')
+                            ->numeric()
+                            ->prefix('CHF'),
+                        TextInput::make('vk2')
+                            ->label('VK2 – Education')
+                            ->numeric()
+                            ->prefix('CHF'),
+                        TextInput::make('vk3')
+                            ->label('VK3 – Swiss RRP')
+                            ->numeric()
+                            ->prefix('CHF'),
                         TextInput::make('mwst')
                             ->label('VAT %')
-                            ->numeric(),
+                            ->numeric()
+                            ->suffix('%'),
+                    ]),
+                Section::make('Price Comparison & Margins')
+                    ->columns(3)
+                    ->schema([
+                        TextInput::make('vk_de_chf')
+                            ->label('German RRP (CHF)')
+                            ->numeric()
+                            ->prefix('CHF'),
+                        TextInput::make('price_diff_percent')
+                            ->label('Price Difference')
+                            ->numeric()
+                            ->suffix('%'),
+                        TextInput::make('margin_amount')
+                            ->label('Retailer Margin')
+                            ->numeric()
+                            ->prefix('CHF'),
+                        TextInput::make('margin_percent')
+                            ->label('Retailer Margin %')
+                            ->numeric()
+                            ->suffix('%'),
+                        TextInput::make('shop_margin_amount')
+                            ->label('Shop Margin')
+                            ->numeric()
+                            ->prefix('CHF'),
+                        TextInput::make('shop_margin_percent')
+                            ->label('Shop Margin %')
+                            ->numeric()
+                            ->suffix('%'),
                     ]),
                 Section::make('Logistics')
                     ->columns(2)
+                    ->collapsed()
                     ->schema([
                         TextInput::make('gewnetto')
                             ->label('Net Weight (g)')
@@ -115,6 +161,7 @@ class ProductsRelationManager extends RelationManager
                     ]),
                 Section::make('Origin & Customs')
                     ->columns(2)
+                    ->collapsed()
                     ->schema([
                         TextInput::make('uspland')
                             ->label('Origin Country Code')
@@ -134,6 +181,7 @@ class ProductsRelationManager extends RelationManager
                     ]),
                 Section::make('Flags')
                     ->columns(2)
+                    ->collapsed()
                     ->schema([
                         Checkbox::make('aktiv')
                             ->label('Active'),
@@ -162,22 +210,53 @@ class ProductsRelationManager extends RelationManager
                 TextColumn::make('bez1')
                     ->label('Product Name')
                     ->searchable()
-                    ->limit(40),
-                TextColumn::make('vk1')
-                    ->label('Price')
+                    ->limit(30),
+                TextColumn::make('ek_eur')
+                    ->label('EK (EUR)')
                     ->numeric(2)
+                    ->prefix('€')
                     ->sortable(),
                 TextColumn::make('ek')
-                    ->label('Cost')
+                    ->label('EK (CHF)')
                     ->numeric(2)
+                    ->prefix('CHF ')
                     ->sortable(),
+                TextColumn::make('vk1')
+                    ->label('VK1')
+                    ->numeric(2)
+                    ->prefix('CHF ')
+                    ->sortable(),
+                TextColumn::make('vk3')
+                    ->label('VK3 RRP')
+                    ->numeric(2)
+                    ->prefix('CHF ')
+                    ->sortable(),
+                TextColumn::make('vk_de_chf')
+                    ->label('DE RRP')
+                    ->numeric(2)
+                    ->prefix('CHF ')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('price_diff_percent')
+                    ->label('Diff %')
+                    ->numeric(1)
+                    ->suffix('%')
+                    ->sortable()
+                    ->color(fn ($state): string => match (true) {
+                        $state === null => 'gray',
+                        abs((float) $state) <= 20 => 'success',
+                        abs((float) $state) <= 30 => 'warning',
+                        default => 'danger',
+                    }),
+                TextColumn::make('margin_percent')
+                    ->label('Margin %')
+                    ->numeric(1)
+                    ->suffix('%')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('aktiv')
                     ->label('Active')
                     ->boolean(),
-                TextColumn::make('artean')
-                    ->label('EAN')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->headerActions([
                 CreateAction::make(),

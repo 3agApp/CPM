@@ -89,6 +89,15 @@ class BrandForm
                             ->default('EUR')
                             ->native(false)
                             ->required(),
+                        TextInput::make('currency_factor')
+                            ->label('Currency factor (→ CHF)')
+                            ->numeric()
+                            ->required()
+                            ->default(1.1000)
+                            ->minValue(0.0001)
+                            ->step(0.0001)
+                            ->placeholder('1.1000')
+                            ->helperText('Multiplier to convert source currency to CHF (incl. exchange rate, shipping, fees).'),
                         Select::make('default_rounding_rule')
                             ->label('Default rounding rule')
                             ->options([

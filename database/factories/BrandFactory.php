@@ -26,6 +26,7 @@ class BrandFactory extends Factory
             'default_supplier_margin' => fake()->randomFloat(2, 10, 35),
             'minimum_shop_margin' => fake()->randomFloat(2, 5, 25),
             'price_currency' => 'EUR',
+            'currency_factor' => 1.1000,
             'default_rounding_rule' => 'end_with_90',
             'is_active' => true,
             'is_webshop' => fake()->boolean(),

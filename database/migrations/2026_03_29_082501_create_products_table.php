@@ -14,36 +14,66 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->foreignUuid('document_conversation_id')->constrained()->cascadeOnDelete();
+
+            // Identifiers
             $table->string('artnr')->nullable();
+            $table->string('bestellnr')->nullable();
+            $table->string('artean')->nullable();
+            $table->string('gtin2')->nullable();
+            $table->string('hersteller_id')->nullable();
+            $table->string('brand_name')->nullable();
+
+            // Description
+            $table->string('bez1')->nullable();
+            $table->text('kurztext')->nullable();
+            $table->text('langtext')->nullable();
+
+            // Classification
             $table->string('wg1')->nullable();
             $table->string('wg2')->nullable();
-            $table->string('bez1')->nullable();
-            $table->string('bestellnr')->nullable();
+
+            // Source pricing (EUR/USD from supplier)
+            $table->decimal('ek_eur', 10, 2)->nullable();
+            $table->decimal('uvp_eur', 10, 2)->nullable();
+
+            // Calculated pricing (CHF)
+            $table->decimal('ek', 10, 2)->nullable();
             $table->decimal('vk1', 10, 2)->nullable();
             $table->decimal('vk2', 10, 2)->nullable();
             $table->decimal('vk3', 10, 2)->nullable();
-            $table->decimal('ek', 10, 2)->nullable();
             $table->decimal('mwst', 5, 2)->nullable();
-            $table->string('artean')->nullable();
-            $table->text('langtext')->nullable();
-            $table->boolean('aktiv')->default(true);
-            $table->text('kurztext')->nullable();
-            $table->string('hersteller_id')->nullable();
-            $table->boolean('webshop')->default(false);
-            $table->boolean('ws_aktiv')->default(false);
-            $table->string('ws_dateavailable')->nullable();
+
+            // Comparison pricing
+            $table->decimal('vk_de_chf', 10, 2)->nullable();
+            $table->decimal('price_diff_percent', 8, 2)->nullable();
+
+            // Margins
+            $table->decimal('margin_amount', 10, 2)->nullable();
+            $table->decimal('margin_percent', 8, 2)->nullable();
+            $table->decimal('shop_margin_amount', 10, 2)->nullable();
+            $table->decimal('shop_margin_percent', 8, 2)->nullable();
+
+            // Logistics
             $table->decimal('gewnetto', 10, 2)->nullable();
             $table->decimal('gewbrutto', 10, 2)->nullable();
-            $table->string('uspland')->nullable();
-            $table->string('zolltarifnr')->nullable();
             $table->integer('verkaufsmenge')->nullable();
             $table->integer('verkaufsmenge_staffel')->nullable();
             $table->integer('wbztage')->nullable();
-            $table->boolean('ws_abverkauf')->default(false);
+
+            // Origin & Customs
+            $table->string('uspland')->nullable();
+            $table->string('ursprungsland')->nullable();
+            $table->string('zolltarifnr')->nullable();
             $table->string('zolltarifnr_ch')->nullable();
             $table->string('zolltarifnr_bez')->nullable();
-            $table->string('ursprungsland')->nullable();
-            $table->string('gtin2')->nullable();
+
+            // Flags
+            $table->boolean('aktiv')->default(true);
+            $table->boolean('webshop')->default(false);
+            $table->boolean('ws_aktiv')->default(false);
+            $table->string('ws_dateavailable')->nullable();
+            $table->boolean('ws_abverkauf')->default(false);
+
             $table->timestamps();
         });
     }

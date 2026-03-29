@@ -23,6 +23,7 @@ class Brand extends Model
         'default_supplier_margin',
         'minimum_shop_margin',
         'price_currency',
+        'currency_factor',
         'default_rounding_rule',
         'is_active',
         'is_webshop',
@@ -34,6 +35,7 @@ class Brand extends Model
         return [
             'default_supplier_margin' => 'decimal:2',
             'minimum_shop_margin' => 'decimal:2',
+            'currency_factor' => 'decimal:4',
             'is_active' => 'boolean',
             'is_webshop' => 'boolean',
             'is_webshop_active' => 'boolean',

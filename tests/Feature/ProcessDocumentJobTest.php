@@ -42,7 +42,22 @@ it('processes document and saves products to database', function () {
             'needs_clarification' => false,
             'question' => '',
             'products' => [
-                ['artnr' => 'WID001', 'bez1' => 'Widget', 'vk1' => 9.99, 'ek' => 5.00],
+                [
+                    'artnr' => 'WID001',
+                    'bez1' => 'Widget',
+                    'ek_eur' => 9.09,
+                    'uvp_eur' => 24.99,
+                    'ek' => 10.00,
+                    'vk1' => 15.00,
+                    'vk2' => 21.25,
+                    'vk3' => 24.99,
+                    'vk_de_chf' => 27.49,
+                    'price_diff_percent' => -9.09,
+                    'margin_amount' => 5.00,
+                    'margin_percent' => 50.0,
+                    'shop_margin_amount' => 9.99,
+                    'shop_margin_percent' => 39.98,
+                ],
             ],
         ];
     });
@@ -53,7 +68,11 @@ it('processes document and saves products to database', function () {
     expect($conversation->status)->toBe(ConversationStatus::Completed)
         ->and($conversation->products)->toHaveCount(1)
         ->and($conversation->products->first()->artnr)->toBe('WID001')
-        ->and($conversation->products->first()->bez1)->toBe('Widget');
+        ->and($conversation->products->first()->bez1)->toBe('Widget')
+        ->and((float) $conversation->products->first()->ek_eur)->toBe(9.09)
+        ->and((float) $conversation->products->first()->ek)->toBe(10.00)
+        ->and((float) $conversation->products->first()->vk1)->toBe(15.00)
+        ->and((float) $conversation->products->first()->vk3)->toBe(24.99);
 });
 
 it('stores completion message when processing succeeds', function () {
