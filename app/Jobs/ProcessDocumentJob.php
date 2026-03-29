@@ -78,7 +78,9 @@ class ProcessDocumentJob implements ShouldQueue
         $this->conversation->products()->delete();
 
         foreach ($response['products'] as $product) {
-            $this->conversation->products()->create($product);
+            $this->conversation->products()->create(
+                array_map(fn ($value) => $value === '' ? null : $value, $product)
+            );
         }
 
         $this->conversation->messages()->create([
