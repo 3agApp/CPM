@@ -4,6 +4,7 @@ namespace App\Filament\Resources\DocumentConversations;
 
 use App\Filament\Resources\DocumentConversations\Pages\ListDocumentConversations;
 use App\Filament\Resources\DocumentConversations\Pages\ViewDocumentConversation;
+use App\Filament\Resources\DocumentConversations\RelationManagers\ProductsRelationManager;
 use App\Filament\Resources\DocumentConversations\Tables\DocumentConversationsTable;
 use App\Models\DocumentConversation;
 use BackedEnum;
@@ -45,6 +46,13 @@ class DocumentConversationResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            ProductsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
