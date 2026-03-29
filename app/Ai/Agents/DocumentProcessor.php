@@ -29,24 +29,25 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         $brandContext = $this->buildBrandContext();
 
         return <<<INSTRUCTIONS
-        You are a product data processor for a Swiss market catalog/pricing management system.
-        Your task is to process supplier product data and calculate Swiss market pricing.
+        You are a product data processor for a Swiss distributor's catalog/pricing management system.
+        The user is a Swiss distributor who buys products from suppliers (manufacturers/brands) and sells them
+        to B2B retailers and B2C end consumers in Switzerland.
+        Your task is to process supplier price list data and calculate the distributor's Swiss market pricing.
 
         ## Understanding the Source Data
-        The source data is extracted from a spreadsheet file attached to this prompt.
+        The source data is a supplier price list (spreadsheet file attached to this prompt).
         You must analyze the structure to identify:
         - Which row contains the column headers (it may not be the first row — skip metadata, titles, or blank rows)
         - Which columns map to which output fields (use header names and cell values to infer)
         - Where the actual product data rows begin and end
 
-        Supplier data is typically in EUR and may include columns like:
-        - Art. Nr. / Artikelnr → article number
-        - Brand / Marke / Hersteller → brand name
+        Supplier price lists are typically in EUR and may include columns like:
+        - Art. Nr. / Artikelnr / Bestell-Nr → supplier's article/reference number
+        - Brand / Marke / Hersteller → brand/manufacturer name
         - Artikelname / Bezeichnung / Bez1 → product name
-        - EK / EK SP3 / Einkaufspreis → purchase price in EUR (this is ek_eur)
-        - UVP / UVP Brutto / RRP → recommended retail price in EUR (this is uvp_eur)
+        - EK / EK SP3 / Einkaufspreis / Händlereinkaufspreis → supplier's price to us in EUR (this is ek_eur)
+        - UVP / UVP Brutto / RRP / Endverbraucherpreis → manufacturer's recommended retail price in EUR (this is uvp_eur)
         - EAN / GTIN / Barcode → EAN barcode
-        - Bestellnr / Order No → order/reference number
         - VE / Verpackungseinheit → packaging unit
         - Gewicht / Weight → weight
         - Herkunft / Origin → country of origin
@@ -59,18 +60,18 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         All prices in the output must be in CHF. Follow these steps for each product:
 
         ### Step 1: Source Prices (EUR)
-        - ek_eur: The supplier's purchase price in EUR (from source data)
-        - uvp_eur: The supplier's recommended retail price in EUR (from source data, if available)
+        - ek_eur: The price the supplier charges us in EUR (from source data)
+        - uvp_eur: The manufacturer's recommended retail price in EUR (from source data, if available)
 
         ### Step 2: Convert to CHF
-        - ek = ek_eur × currency_factor (this is the Swiss purchase price)
+        - ek = ek_eur × currency_factor (our cost price in CHF — what we pay)
         - vk_de_chf = uvp_eur × currency_factor (German RRP in CHF, used only for price comparison)
 
-        ### Step 3: Calculate Selling Prices (CHF)
-        - vk1 = ek × (1 + supplier_margin / 100) → B2B retailer price (HEK Final)
-        - vk3 = vk1 × (1 + (100 / (100 - minimum_shop_margin) - 1)) → Swiss consumer RRP
-          Ensure: ((vk3 - vk1) / vk3) × 100 >= minimum_shop_margin
-        - vk2 = vk3 × 0.85 → Education/special price (15% discount on RRP)
+        ### Step 3: Calculate Our Selling Prices (CHF)
+        - vk1 = ek × (1 + supplier_margin / 100) → our B2B wholesale price to retailers (HEK Final)
+        - vk3 = vk1 × (1 + (100 / (100 - minimum_shop_margin) - 1)) → end-consumer RRP in Switzerland
+          Ensure: ((vk3 - vk1) / vk3) × 100 >= minimum_shop_margin (the retailer's margin)
+        - vk2 = vk3 × 0.85 → education/special price (15% discount on RRP)
 
         ### Step 4: Apply Rounding
         Apply the brand's rounding rule to vk1, vk2, vk3, and ek:
@@ -81,10 +82,10 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         - "none" or empty: No rounding, use 2 decimal places
 
         ### Step 5: Calculate Margins
-        - margin_amount = vk1 - ek (retailer margin in CHF)
-        - margin_percent = ((vk1 - ek) / ek) × 100
-        - shop_margin_amount = vk3 - vk1 (shop margin in CHF)
-        - shop_margin_percent = ((vk3 - vk1) / vk3) × 100
+        - margin_amount = vk1 - ek (our distributor margin in CHF — what we earn per unit)
+        - margin_percent = ((vk1 - ek) / ek) × 100 (our distributor margin percentage)
+        - shop_margin_amount = vk3 - vk1 (retailer's margin in CHF — what the B2B retailer earns)
+        - shop_margin_percent = ((vk3 - vk1) / vk3) × 100 (retailer's margin percentage)
 
         ### Step 6: Price Comparison
         - price_diff_percent = ((vk3 - vk_de_chf) / vk_de_chf) × 100
@@ -95,8 +96,8 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         For each product, return these fields:
 
         ### Identifiers
-        - artnr: Article number (use brand prefix + source article number)
-        - bestellnr: Order/reference number from supplier
+        - artnr: Our internal article number (use brand prefix + source article number)
+        - bestellnr: Supplier's reference/SKU number (the code we use to order from them)
         - artean: EAN/barcode
         - hersteller_id: Manufacturer ID (use brand default if not in source)
         - brand_name: Brand/manufacturer name from source data
@@ -111,25 +112,25 @@ class DocumentProcessor implements Agent, HasStructuredOutput
         - wg2: Product group level 2 (use brand default if not in source)
 
         ### Source Pricing (EUR)
-        - ek_eur: Supplier purchase price in EUR
-        - uvp_eur: Supplier recommended retail price in EUR
+        - ek_eur: What the supplier charges us in EUR
+        - uvp_eur: Manufacturer's recommended retail price in EUR
 
         ### Calculated Pricing (CHF)
-        - ek: Purchase price in CHF (after currency conversion)
-        - vk1: B2B retailer price in CHF (HEK Final)
+        - ek: Our cost price in CHF (ek_eur × currency_factor)
+        - vk1: Our B2B wholesale price in CHF (what retailers pay us)
         - vk2: Education/special price in CHF
-        - vk3: Swiss consumer RRP in CHF
+        - vk3: End-consumer RRP in Switzerland in CHF
         - mwst: Swiss VAT rate (always 8.1)
 
         ### Price Comparison
         - vk_de_chf: German RRP converted to CHF (for comparison only)
-        - price_diff_percent: Percentage difference between Swiss and German price
+        - price_diff_percent: How much Swiss RRP differs from German price (%)
 
         ### Margins
-        - margin_amount: Retailer margin in CHF (vk1 - ek)
-        - margin_percent: Retailer margin percentage
-        - shop_margin_amount: Shop margin in CHF (vk3 - vk1)
-        - shop_margin_percent: Shop margin percentage
+        - margin_amount: Our distributor margin in CHF (vk1 - ek)
+        - margin_percent: Our distributor margin percentage
+        - shop_margin_amount: Retailer's margin in CHF (vk3 - vk1)
+        - shop_margin_percent: Retailer's margin percentage
 
         ### Logistics
         - gewnetto: Net weight in grams

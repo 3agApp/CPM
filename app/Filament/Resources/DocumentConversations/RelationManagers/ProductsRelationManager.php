@@ -37,7 +37,7 @@ class ProductsRelationManager extends RelationManager
                             ->label('Article Number')
                             ->maxLength(255),
                         TextInput::make('bestellnr')
-                            ->label('Order Number')
+                            ->label('Supplier Ref.')
                             ->maxLength(255),
                         TextInput::make('artean')
                             ->label('EAN')
@@ -79,11 +79,11 @@ class ProductsRelationManager extends RelationManager
                     ->columns(2)
                     ->schema([
                         TextInput::make('ek_eur')
-                            ->label('Purchase Price (EUR)')
+                            ->label('Supplier Price (EUR)')
                             ->numeric()
                             ->prefix('€'),
                         TextInput::make('uvp_eur')
-                            ->label('EU RRP (EUR)')
+                            ->label('Mfr. RRP (EUR)')
                             ->numeric()
                             ->prefix('€'),
                     ]),
@@ -91,11 +91,11 @@ class ProductsRelationManager extends RelationManager
                     ->columns(3)
                     ->schema([
                         TextInput::make('ek')
-                            ->label('Purchase Price (CHF)')
+                            ->label('Our Cost (CHF)')
                             ->numeric()
                             ->prefix('CHF'),
                         TextInput::make('vk1')
-                            ->label('VK1 – B2B Retailer')
+                            ->label('VK1 – B2B Wholesale')
                             ->numeric()
                             ->prefix('CHF'),
                         TextInput::make('vk2')
@@ -103,7 +103,7 @@ class ProductsRelationManager extends RelationManager
                             ->numeric()
                             ->prefix('CHF'),
                         TextInput::make('vk3')
-                            ->label('VK3 – Swiss RRP')
+                            ->label('VK3 – Consumer RRP')
                             ->numeric()
                             ->prefix('CHF'),
                         TextInput::make('mwst')
@@ -123,19 +123,19 @@ class ProductsRelationManager extends RelationManager
                             ->numeric()
                             ->suffix('%'),
                         TextInput::make('margin_amount')
-                            ->label('Retailer Margin')
+                            ->label('Our Margin')
                             ->numeric()
                             ->prefix('CHF'),
                         TextInput::make('margin_percent')
-                            ->label('Retailer Margin %')
+                            ->label('Our Margin %')
                             ->numeric()
                             ->suffix('%'),
                         TextInput::make('shop_margin_amount')
-                            ->label('Shop Margin')
+                            ->label('Retailer Margin')
                             ->numeric()
                             ->prefix('CHF'),
                         TextInput::make('shop_margin_percent')
-                            ->label('Shop Margin %')
+                            ->label('Retailer Margin %')
                             ->numeric()
                             ->suffix('%'),
                     ]),
@@ -222,7 +222,7 @@ class ProductsRelationManager extends RelationManager
                     ->prefix('CHF ')
                     ->sortable(),
                 TextColumn::make('vk1')
-                    ->label('VK1')
+                    ->label('VK1 B2B')
                     ->numeric(2)
                     ->prefix('CHF ')
                     ->sortable(),
@@ -249,7 +249,7 @@ class ProductsRelationManager extends RelationManager
                         default => 'danger',
                     }),
                 TextColumn::make('margin_percent')
-                    ->label('Margin %')
+                    ->label('Our Margin')
                     ->numeric(1)
                     ->suffix('%')
                     ->sortable()

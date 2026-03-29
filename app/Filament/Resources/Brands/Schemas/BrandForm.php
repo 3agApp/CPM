@@ -57,7 +57,7 @@ class BrandForm
                     ->columns(2)
                     ->schema([
                         TextInput::make('default_supplier_margin')
-                            ->label('Default brand margin (%)')
+                            ->label('Our distributor margin (%)')
                             ->numeric()
                             ->required()
                             ->default(25)
@@ -66,9 +66,9 @@ class BrandForm
                             ->step(0.01)
                             ->suffix('%')
                             ->placeholder('25')
-                            ->helperText('Used for HEK calculation.'),
+                            ->helperText('Markup on cost price to calculate VK1 (B2B wholesale price).'),
                         TextInput::make('minimum_shop_margin')
-                            ->label('Minimum shop margin (%)')
+                            ->label('Minimum retailer margin (%)')
                             ->numeric()
                             ->required()
                             ->default(15)
@@ -77,7 +77,7 @@ class BrandForm
                             ->step(0.01)
                             ->suffix('%')
                             ->placeholder('15')
-                            ->helperText('Minimum required shop margin.'),
+                            ->helperText('Minimum margin the B2B retailer earns (VK3 vs VK1).'),
                         Select::make('price_currency')
                             ->label('Price currency')
                             ->options([
